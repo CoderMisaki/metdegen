@@ -1,0 +1,1506 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Meteora Alpha Terminal | Elite Pro</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-main: #121212;
+            --bg-panel: #1e1e1e;
+            --bg-hover: #2a2a2a;
+            --border-color: #333333;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --text-tertiary: #666666;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --accent-orange: #f59e0b;
+            --accent-blue: #3b82f6;
+            --accent-purple: #8b5cf6;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent !important; outline: none; }
+        body { background-color: var(--bg-main); color: var(--text-primary); -webkit-font-smoothing: antialiased; min-height: 100vh; overflow-x: hidden; }
+        
+        .container { max-width: 1000px; margin: 0 auto; padding: 16px; }
+        .flex { display: flex; } .flex-col { flex-direction: column; } .items-center { align-items: center; } 
+        .justify-between { justify-content: space-between; } .truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        
+        .text-xs { font-size: 12px; } .text-sm { font-size: 14px; } .text-base { font-size: 16px; } 
+        .text-lg { font-size: 18px; } .font-semibold { font-weight: 600; } .font-bold { font-weight: 700; }
+        .text-secondary { color: var(--text-secondary); } .text-green { color: var(--accent-green); } .text-red { color: var(--accent-red); }
+
+        .header { display: flex; align-items: center; gap: 14px; padding-bottom: 14px; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); }
+        .header svg { width: 22px; height: 22px; color: var(--text-primary); flex-shrink: 0; }
+        .header-text { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+        .header-title { font-size: 18px; font-weight: 600; letter-spacing: -0.2px; color: var(--text-primary); line-height: 1.2; display: flex; align-items: center; gap: 8px;}
+        .header-subtitle { font-size: 11px; color: var(--text-secondary); line-height: 1.2; }
+
+        .badge-stale { display: none; background: rgba(59, 130, 246, 0.15); color: var(--accent-blue); border: 1px solid rgba(59, 130, 246, 0.3); padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: 700; letter-spacing: 0.5px; }
+
+        .search-box { display: flex; gap: 8px; margin-bottom: 12px; }
+        .search-input { flex: 1; padding: 12px 16px; background-color: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 10px; color: var(--text-primary); font-size: 14px; transition: border-color 0.2s; }
+        .search-input:focus { border-color: var(--text-secondary); }
+        .search-btn { flex: none; padding: 0 20px; border-radius: 10px; font-weight: 600; cursor: pointer; background: var(--text-primary); color: var(--bg-main); border:none; transition: transform 0.1s;}
+        .search-btn:active { transform: scale(0.96); }
+
+        .filters { display: flex; gap: 10px; padding-bottom: 8px; margin-bottom: 16px; }
+        .filter-btn { background: var(--bg-panel); border: 1px solid var(--border-color); color: var(--text-secondary); padding: 10px 16px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: all 0.2s; flex: 1; display: flex; justify-content: center; align-items: center; gap: 8px; }
+        .filter-btn.active { background: var(--text-primary); color: var(--bg-main); border-color: var(--text-primary); }
+
+        .pool-item { display: flex; flex-direction: column; padding: 16px; margin-bottom: 14px; background-color: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 12px; transition: background-color 0.2s, border-color 0.2s; cursor: pointer; gap: 12px; position: relative; overflow: hidden; }
+        .pool-item:hover { background-color: var(--bg-hover); border-color: #555; }
+        
+        .pin-btn { background: none; border: none; color: var(--text-tertiary); cursor: pointer; transition: color 0.2s, transform 0.1s; display: flex; align-items: center; justify-content: center; padding: 4px; }
+        .pin-btn:hover { color: var(--accent-orange); transform: scale(1.1); }
+        .pin-btn.active { color: var(--accent-orange); }
+        .pool-item-pin { position: absolute; top: 12px; right: 12px; z-index: 2; }
+
+        .pool-info { display: flex; align-items: center; gap: 12px; width: 100%; padding-right: 24px; }
+        .pool-rank { display: flex; flex-direction: column; align-items: center; gap: 2px; width: 32px; flex-shrink: 0; }
+        .rank-number { color: var(--text-primary); font-size: 14px; font-weight: 700; }
+        .rank-label { color: var(--text-tertiary); font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;}
+        
+        .pool-logo { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--border-color); background-color: var(--bg-main); object-fit: cover; flex-shrink: 0; }
+        .pool-name-box { flex: 1; min-width: 0; }
+        .pool-name { font-size: 16px; font-weight: 600; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+        .pool-ca { font-size: 11px; color: var(--text-secondary); font-family: monospace; }
+
+        .badges-container { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; }
+        .badge { font-size: 9px; padding: 2px 6px; border-radius: 4px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; display: inline-flex; align-items: center; gap: 3px; }
+        .badge-hot { background: rgba(245, 158, 11, 0.1); color: var(--accent-orange); border: 1px solid rgba(245, 158, 11, 0.2); }
+        .badge-new { background: rgba(16, 185, 129, 0.1); color: var(--accent-green); border: 1px solid rgba(16, 185, 129, 0.2); }
+        .badge-alpha { background: rgba(139, 92, 246, 0.1); color: var(--accent-purple); border: 1px solid rgba(139, 92, 246, 0.2); }
+        .badge-risky { background: rgba(239, 68, 68, 0.1); color: var(--accent-red); border: 1px solid rgba(239, 68, 68, 0.2); }
+        .badge-rank { background: rgba(59, 130, 246, 0.1); color: var(--accent-blue); border: 1px solid rgba(59, 130, 246, 0.2); }
+        .badge-buy { background: var(--accent-green); color: #000; border: 1px solid #059669; box-shadow: 0 0 8px rgba(16, 185, 129, 0.3); }
+
+        .pool-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; background-color: var(--bg-main); padding: 12px; border-radius: 12px; border: 1px solid var(--border-color); }
+        .metric-col { display: flex; flex-direction: column; }
+        .metric-label { font-size: 10px; color: var(--text-tertiary); text-transform: uppercase; margin-bottom: 4px; font-weight: 600; }
+        .metric-val { font-size: 14px; font-weight: 600; }
+
+        .modal-overlay { position: fixed; inset: 0; background-color: rgba(0, 0, 0, 0.85); backdrop-filter: blur(5px); display: flex; align-items: flex-end; justify-content: center; z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        .modal-content { background-color: var(--bg-main); width: 100%; max-height: 90vh; border-radius: 20px 20px 0 0; display: flex; flex-direction: column; transform: translateY(100%); transition: transform 0.3s ease; }
+        .modal-overlay.active .modal-content { transform: translateY(0); }
+
+        .modal-header { padding: 20px; border-bottom: 1px solid var(--border-color); background-color: var(--bg-panel); border-radius: 20px 20px 0 0; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+        .modal-close { background: var(--border-color); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        
+        .modal-body { padding: 20px; overflow-y: auto; scroll-behavior: smooth; display: flex; flex-direction: column; gap: 24px; }
+
+        .ai-box { background-color: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; font-size: 13px; line-height: 1.6; color: #d1d5db; min-height: 150px; }
+        .ai-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border-color); }
+        .ai-score-badge { background-color: var(--bg-main); border: 1px solid var(--border-color); padding: 4px 10px; border-radius: 8px; font-weight: bold; font-family: monospace; }
+        
+        .toast { position: fixed; top: 20px; left: 50%; transform: translate(-50%, -100px); background-color: var(--text-primary); color: var(--bg-main); padding: 12px 24px; border-radius: 30px; font-weight: 600; font-size: 13px; z-index: 200; transition: transform 0.3s ease; }
+        .toast.show { transform: translate(-50%, 0); }
+        
+        .status-area { padding: 40px 20px; text-align: center; color: var(--text-secondary); font-size: 13px; display: none; }
+        
+        .info-box { background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.2); color: #93c5fd; padding: 16px; border-radius: 12px; margin-bottom: 16px; font-size: 13px; display: none; line-height: 1.5; }
+        .info-box.show { display: block; }
+        .info-title { font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 6px; color: #bfdbfe; }
+        .info-box.warning { background: rgba(245, 158, 11, 0.08); border-color: rgba(245, 158, 11, 0.2); color: #fcd34d; }
+        .info-box.warning .info-title { color: #fde68a; }
+
+        .btn { display: flex; align-items: center; justify-content: center; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: all 0.2s;}
+        .btn-outline { background-color: transparent; border: 1px solid var(--border-color); color: var(--text-primary); }
+        .btn-outline:hover { background-color: var(--bg-hover); border-color: var(--text-secondary); }
+        .btn-solid { background-color: var(--text-primary); color: var(--bg-main); }
+        .btn-solid:active { transform: scale(0.98); }
+
+        .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; margin-top: 24px; }
+
+        @media (min-width: 768px) {
+            .container { padding: 32px; }
+            .pool-item { flex-direction: row; align-items: center; padding: 16px 20px; gap: 16px; margin-bottom: 16px; }
+            .pool-info { width: auto; flex: 1.5; }
+            .pool-rank { flex-direction: row; width: 48px; gap: 6px; justify-content: center; }
+            .rank-label { display: none; }
+            .pool-metrics { display: flex; background: none; border: none; padding: 0; flex: 2; justify-content: space-between; gap: 16px; }
+            .metric-col { align-items: flex-end; width: 33%; }
+            .modal-overlay { align-items: center; }
+            .modal-content { width: 900px; max-width: 95%; border-radius: 16px; border: 1px solid var(--border-color); transform: scale(0.95); }
+            .modal-overlay.active .modal-content { transform: scale(1); }
+            .modal-body { flex-direction: row; gap: 24px; }
+            .modal-body > div { flex: 1; overflow-y: auto; }
+            .action-grid { grid-template-columns: repeat(4, 1fr); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                <line x1="12" y1="22.08" x2="12" y2="12"></line>
+            </svg>
+            <div class="header-text">
+                <div class="header-title">Meteora Intelligence <span id="staleBadge" class="badge-stale">⚠️ CACHED</span></div>
+                <p class="header-subtitle">Terminal Likuiditas & Degen Analytics</p>
+            </div>
+        </div>
+
+        <div class="search-box">
+            <input id="searchInput" type="text" class="search-input" placeholder="Cari token mint atau ticker...">
+            <button id="searchBtn" class="btn-solid search-btn">Cari</button>
+        </div>
+
+        <div class="filters" id="filterContainer">
+            <button id="btnMeteora" class="filter-btn active" onclick="switchView('meteora')">🏠 Meteora Pools</button>
+            <button id="btnAlpha" class="filter-btn" onclick="switchView('alpha')">📖 Signal Alpha</button>
+        </div>
+
+        <div id="systemInfo" class="info-box">
+            <div class="info-title" id="infoTitle">📡 Radar Standby</div>
+            <div id="infoDesc">Sistem standby.</div>
+        </div>
+
+        <div>
+            <div style="display: flex; justify-content: space-between; padding: 0 16px 8px 16px; color: var(--text-tertiary); font-size: 11px; font-weight: 600; text-transform: uppercase;">
+                <div style="flex: 1.5; padding-left: 36px;">Asset Pool</div>
+                <div style="flex: 2; display: flex; justify-content: space-between; padding-right: 16px;">
+                    <div id="colFeeBin" style="width:33%; text-align:left;">APR Proxy (Est)</div>
+                    <div style="width:33%; text-align:right;">Vol (24H)</div>
+                    <div style="width:33%; text-align:right;">Trend</div>
+                </div>
+            </div>
+
+            <div id="statusArea" class="status-area">Memuat Sistem Mesin Analitik...</div>
+            <div id="poolList"></div>
+        </div>
+    </div>
+
+    <div id="analysisModal" class="modal-overlay" onclick="if(event.target === this) closeModal()">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="flex items-center gap-3">
+                    <img id="mLogo" src="" class="pool-logo" style="width:48px; height:48px;" loading="lazy" referrerpolicy="no-referrer">
+                    <div>
+                        <h2 class="text-base font-bold" style="display:flex; align-items:center; gap:8px;">
+                            <span id="mName">ANALYZING...</span>
+                            <button id="modalPinBtn" class="pin-btn" onclick="togglePin(selectedPoolKey, event)" title="Pantau Token">
+                                <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                            </button>
+                        </h2>
+                        <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px; font-family: monospace;" id="mSubtitle">Loading...</div>
+                    </div>
+                </div>
+                <button class="modal-close" onclick="closeModal()">✕</button>
+            </div>
+
+            <div class="modal-body">
+                <div style="display: flex; flex-direction: column;">
+                    <h3 class="text-xs text-secondary font-semibold" style="margin-bottom:12px;">METRIK ON-CHAIN UTAMA</h3>
+                    <div class="pool-metrics" style="grid-template-columns: repeat(2, 1fr); gap:12px; margin-bottom: 20px;">
+                        <div><div class="metric-label">Price (USD)</div><div id="mPrice" class="metric-val text-primary">—</div></div>
+                        <div><div class="metric-label">Market Cap</div><div id="mMC" class="metric-val text-primary">—</div></div>
+                        <div><div class="metric-label">Liquidity (TVL)</div><div id="mTVL" class="metric-val text-primary">—</div></div>
+                        <div id="wrapActiveTvl"><div class="metric-label">Active TVL (Est)</div><div id="mActiveTVL" class="metric-val text-primary">—</div></div>
+                        <div><div class="metric-label">24H Volume</div><div id="mVol" class="metric-val text-primary">—</div></div>
+                        <div id="wrapFees"><div class="metric-label">24H Fees</div><div id="mFees" class="metric-val text-primary">—</div></div>
+                        <div><div class="metric-label">Token Age</div><div id="mAge" class="metric-val text-primary">—</div></div>
+                        <div><div class="metric-label">Best Trend</div><div id="mChange" class="metric-val text-primary">—</div></div>
+                    </div>
+
+                    <h3 class="text-xs text-secondary font-semibold" style="margin-bottom:12px;" id="microTitle">DATA MICROSTRUCTURE & DEX</h3>
+                    <div class="pool-metrics" style="grid-template-columns: repeat(3, 1fr); gap:12px; margin-bottom: 20px;">
+                        <div><div class="metric-label" id="lblMicro1">24H Buys/Sells</div><div id="valMicro1" class="metric-val text-primary">—</div></div>
+                        <div><div class="metric-label" id="lblMicro2">1H Buys/Sells</div><div id="valMicro2" class="metric-val text-primary">—</div></div>
+                        <div><div class="metric-label" id="lblMicro3">1H Volume</div><div id="valMicro3" class="metric-val text-primary">—</div></div>
+                        <div><div class="metric-label" id="lblMicro4">Volume Quality</div><div id="valMicro4" class="metric-val text-primary">—</div></div>
+                        <div><div class="metric-label" id="lblMicro5">5M Vol Spike</div><div id="valMicro5" class="metric-val text-primary">—</div></div>
+                        <div><div class="metric-label" id="lblMicro6">Avg Tx Size</div><div id="valMicro6" class="metric-val text-primary">—</div></div>
+                    </div>
+
+                    <h3 class="text-xs text-secondary font-semibold" style="margin-bottom:12px;">BIRDEYE DEEP ANALYTICS</h3>
+                    <div class="pool-metrics" style="grid-template-columns: repeat(2, 1fr); gap:12px;">
+                        <div><div class="metric-label">Top 10 Holders</div><div id="beHolders" class="metric-val text-secondary">Loading...</div></div>
+                        <div><div class="metric-label">Creator Wallet</div><div id="beCreator" class="metric-val text-secondary">Loading...</div></div>
+                        <div><div class="metric-label">Mint Auth (Cetak Baru)</div><div id="beMint" class="metric-val text-secondary">Loading...</div></div>
+                        <div><div class="metric-label">Freeze Auth (Bekukan)</div><div id="beFreeze" class="metric-val text-secondary">Loading...</div></div>
+                    </div>
+                    
+                    <div class="action-grid">
+                        <button id="mCopyBtn" class="btn btn-outline" style="padding: 12px 0;">Salin CA</button>
+                        <a id="mDexLinkBtn" class="btn btn-outline" style="padding: 12px 0; text-decoration:none;" target="_blank">Chart ↗</a>
+                        <a id="mRugCheckBtn" class="btn btn-outline" style="padding: 12px 0; text-decoration:none;" target="_blank">RugCheck ↗</a>
+                        <a id="mLinkBtn" class="btn btn-solid" style="padding: 12px 0; text-decoration:none;" target="_blank">Trade DEX ↗</a>
+                    </div>
+                </div>
+
+                <div class="flex flex-col">
+                    <h3 class="text-xs text-secondary font-semibold" style="margin-bottom:12px;" id="aiBoxTitle">ALGORITHMIC STRATEGY SCORE</h3>
+                    <div class="ai-box" style="flex:1;" id="aiOutput"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast">Notifikasi</div>
+
+    <script>
+        const SYSTEM_CODENAME = "Masako_Alpha_Engine_v16"; 
+        
+        // Obfuscated API Key Birdeye
+        const _b1 = "c47d9bb6"; const _b2 = "b83c483e"; const _b3 = "9114f2b7"; const _b4 = "03dd3a68";
+        const getBKey = () => _b1 + _b2 + _b3 + _b4;
+
+        let poolsData = [];       
+        let alphaData = [];       
+        let currentView = 'meteora'; 
+        let searchQuery = "";
+        let refreshTimer = null;
+        let activeModalData = null; 
+        let selectedPoolKey = null; 
+        let pinnedTokens = new Set(JSON.parse(localStorage.getItem('masako_pinned') || '[]'));
+        
+        let isMeteoraLoading = false;
+        let isAlphaLoading = false;
+
+        let ctrlMeteora = null;
+        let ctrlAlpha = null;
+        let ctrlSearch = null;
+        
+        const sleep = ms => new Promise(r => setTimeout(r, ms)); 
+
+        let lastMeteoraFetch = 0;
+        let lastAlphaFetch = 0;
+
+        const MAX_CACHE = 300;
+        const apiCache = new Map();
+
+        const IGNORED_MINTS = new Set([
+            'So11111111111111111111111111111111111111112',
+            'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
+            'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB',
+            'mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So',
+            'J1toso1uCk3RLmjorhTtrVwY9HJ7X8V9yYac6Y7kGCPn',
+            'EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm',
+            'DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263'
+        ]);
+
+        function togglePin(address, event) {
+            if (event) event.stopPropagation();
+            if (!address) return;
+            
+            if (pinnedTokens.has(address)) {
+                pinnedTokens.delete(address);
+                showToast("Dihapus dari pantauan");
+            } else {
+                pinnedTokens.add(address);
+                showToast("Token disematkan!");
+            }
+            
+            localStorage.setItem('masako_pinned', JSON.stringify([...pinnedTokens]));
+            applyFiltersAndRender();
+
+            if (selectedPoolKey === address) {
+                const modalPin = document.getElementById('modalPinBtn');
+                if (modalPin) {
+                    const isPinned = pinnedTokens.has(address);
+                    modalPin.classList.toggle('active', isPinned);
+                    modalPin.innerHTML = isPinned 
+                        ? `<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="currentColor" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>`
+                        : `<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>`;
+                }
+            }
+        }
+
+        function updateStaleBadge(isStale) {
+            document.getElementById('staleBadge').style.display = isStale ? 'inline-block' : 'none';
+        }
+
+        function showInfoBox(title, desc, isWarning = false) {
+            const box = document.getElementById('systemInfo');
+            const descEl = document.getElementById('infoDesc');
+            box.className = 'info-box show';
+            if (isWarning) box.classList.add('warning');
+            box.querySelector('.info-title').innerHTML = `${isWarning ? '⚠️' : '📡'} ${title}`;
+            descEl.innerText = desc;
+        }
+
+        function hideInfoBox() {
+            document.getElementById('systemInfo').className = 'info-box';
+        }
+
+        function safeExec(fn) {
+            try { fn(); } catch(e) {}
+        }
+
+        function escapeHTML(str) {
+            return String(str || "").replace(/[&<>'"]/g, tag => 
+                ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag])
+            );
+        }
+
+        function setCacheLimit(map, key, value, maxSize = MAX_CACHE) {
+            if (value === null || value === undefined || value === "" || Number.isNaN(value)) {
+                return map.get(key) ?? null;
+            }
+            if (map.size >= maxSize) {
+                const firstKey = map.keys().next().value;
+                map.delete(firstKey);
+            }
+            map.set(key, value);
+            return value;
+        }
+
+        async function fetchWithCache(url, ttl = 60000, signal = null) {
+            const now = Date.now();
+            if (apiCache.has(url)) {
+                const c = apiCache.get(url);
+                if (now - c.time < ttl) return c.data;
+            }
+            
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 15000); 
+            
+            if (signal) {
+                signal.addEventListener('abort', () => {
+                    clearTimeout(timeoutId);
+                    controller.abort();
+                });
+            }
+
+            try {
+                const res = await fetch(url, { signal: controller.signal, cache: "no-store" });
+                clearTimeout(timeoutId);
+                if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
+                const data = await res.json();
+                setCacheLimit(apiCache, url, { data, time: now });
+                return data;
+            } catch (e) {
+                clearTimeout(timeoutId);
+                if (apiCache.has(url)) return apiCache.get(url).data; 
+                throw e; 
+            }
+        }
+
+        const SOL_RE = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
+        function isValidSolAddress(v) { return SOL_RE.test(String(v || '').trim()); }
+        function normalizeAddressInput(q) { return String(q || '').trim(); }
+
+        const formatMoney = (n) => {
+            if (n === null || n === undefined) return "—";
+            const num = Number(n);
+            if (!Number.isFinite(num)) return "—";
+            if (num === 0) return "$0.00";
+            if (num >= 1e9) return "$" + (num / 1e9).toFixed(2) + "B";
+            if (num >= 1e6) return "$" + (num / 1e6).toFixed(2) + "M";
+            if (num >= 1e3) return "$" + (num / 1e3).toFixed(1) + "K";
+            return "$" + num.toFixed(2);
+        };
+
+        const formatPct = (n) => {
+            if (n === null || n === undefined || Number.isNaN(n)) return "—";
+            const num = Number(n);
+            if (num === 0) return "0.00%";
+            return (num > 0 ? "▲ +" : "▼ ") + Math.abs(num).toFixed(2) + "%";
+        };
+
+        const formatNum = (n) => {
+            if (n === null || n === undefined || !Number.isFinite(n)) return "—";
+            if (n === 0) return "0";
+            return new Intl.NumberFormat('en-US').format(Math.floor(n));
+        };
+
+        const normalizeFeeText = (feePct) => {
+            if (feePct === null || feePct === undefined || !Number.isFinite(feePct)) return "—";
+            if (feePct === 0) return "0.00%";
+            if (feePct <= 1) return (feePct * 100).toFixed(2) + "%";
+            return feePct.toFixed(2) + "%";
+        };
+
+        const formatAddress = (addr) => (!addr || addr === "Unknown" || addr === "—" || addr.length < 8) ? "—" : `${addr.substring(0, 4)}...${addr.substring(addr.length - 4)}`;
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.innerText = msg; toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2000);
+        }
+
+        async function copyText(text, typeName) {
+            if (!text || text === "Unknown" || text === "—") return showToast("Address invalid");
+            try { await navigator.clipboard.writeText(text); showToast(`${typeName} disalin!`); } 
+            catch (e) {
+                const input = document.createElement('input'); input.value = text; document.body.appendChild(input);
+                input.select(); try { document.execCommand('copy'); showToast(`${typeName} disalin!`); } catch(err){} document.body.removeChild(input);
+            }
+        }
+
+        function extractArray(obj) {
+            if (!obj) return [];
+            if (Array.isArray(obj)) return obj;
+            if (obj.data && Array.isArray(obj.data)) return obj.data;
+            if (obj.pools && Array.isArray(obj.pools)) return obj.pools;
+            return [];
+        }
+
+        function getBestPriceChange(dex) {
+            if (!dex || !dex.priceChange) return null;
+            if (typeof dex.priceChange.h24 === 'number') return Number(dex.priceChange.h24);
+            if (typeof dex.priceChange.h6 === 'number') return Number(dex.priceChange.h6);
+            if (typeof dex.priceChange.h1 === 'number') return Number(dex.priceChange.h1);
+            if (typeof dex.priceChange.m5 === 'number') return Number(dex.priceChange.m5);
+            return null;
+        }
+
+        // Fetch khusus data PIN agar kebal Refresh
+        async function fetchPinnedTokens(signal) {
+            if (pinnedTokens.size === 0) return [];
+            const arrPins = Array.from(pinnedTokens);
+            let fetchedPairs = [];
+
+            for(let i=0; i < arrPins.length; i+=30) {
+                const chunk = arrPins.slice(i, i+30).join(',');
+                const res = await fetchWithCache(`https://api.dexscreener.com/latest/dex/tokens/${chunk}`, 30000, signal).catch(()=>null);
+                if (signal?.aborted) return [];
+                if(res && res.pairs) {
+                    const validSolana = res.pairs.filter(x => x.chainId === 'solana');
+                    fetchedPairs.push(...validSolana);
+                }
+            }
+            return fetchedPairs;
+        }
+
+        async function fetchBirdeyeSecurity(mint) {
+            if(!mint || !isValidSolAddress(mint)) return null;
+            const cacheKey = 'be_sec_' + mint;
+            const cached = sessionStorage.getItem(cacheKey);
+            
+            if (cached) {
+                const parsed = JSON.parse(cached);
+                if (Date.now() - parsed.time < 120000) return parsed.data; 
+            }
+
+            try {
+                // Endpoint resmi terbaru untuk security di Birdeye
+                const res = await fetch(`https://public-api.birdeye.so/defi/token_security?address=${mint}`, {
+                    method: 'GET',
+                    headers: { 
+                        'X-API-KEY': getBKey(), 
+                        'x-chain': 'solana',
+                        'accept': 'application/json'
+                    }
+                });
+                
+                if (!res.ok) return null; // Toleransi fail agar modal tidak crash
+                const json = await res.json();
+                
+                if (json && json.success && json.data) {
+                    sessionStorage.setItem(cacheKey, JSON.stringify({ data: json.data, time: Date.now() }));
+                    return json.data;
+                }
+            } catch(e) { return null; }
+            
+            return null;
+        }
+
+        function computeAdvancedMetrics(p, avgVolBaseline = 0) {
+            const vol24 = Number(p.vol24h || 0);
+            const vol5m = p.dexData?.volume?.m5 !== undefined ? Number(p.dexData.volume.m5) : (Number(p.dexData?.volume?.h1 || 0) / 12);
+            
+            const buys = Number(p.dexData?.txns?.h24?.buys || 0);
+            const sells = Number(p.dexData?.txns?.h24?.sells || 0);
+            const buys1m = Number(p.dexData?.txns?.h1?.buys || 0);
+            const sells1m = Number(p.dexData?.txns?.h1?.sells || 0);
+
+            const totalTx1m = buys1m + sells1m;
+            const vol1m = Number(p.dexData?.volume?.h1 || 0);
+            const avgTxSize1m = totalTx1m > 0 ? vol1m / totalTx1m : 0;
+
+            const totalTx24 = buys + sells;
+            const avgTxSize24 = totalTx24 > 0 ? vol24 / totalTx24 : 0;
+
+            const isBotSpam = totalTx1m > 400 && avgTxSize1m < 40; 
+            const isBuyDominant = buys1m > (sells1m * 1.15);
+
+            const liquidity = Number(p.tvl || 0);
+            const priceChange = Number(p.priceChange || 0);
+            const priceChange5m = Number(p.dexData?.priceChange?.m5 || 0);
+
+            const baseline = avgVolBaseline > 0 ? (avgVolBaseline / 288) : (vol24 / 288);
+            const volSpike = baseline > 0 ? vol5m / baseline : 0;
+            
+            const buySellRatio = sells > 0 ? buys / sells : (buys > 0 ? 2 : 1);
+            const buySellRatio1m = sells1m > 0 ? buys1m / sells1m : (buys1m > 0 ? 2 : 1);
+            const volTvl = liquidity > 0 ? vol24 / liquidity : 0;
+
+            const whaleActive = avgTxSize1m > (avgTxSize24 * 3) && avgTxSize1m > 300 && !isBotSpam; 
+            const whaleAccumulation = whaleActive && buySellRatio1m > 1.2;
+
+            const liquidityRisk = (liquidity < 5000 ? 2 : 0) + (volTvl > 10 ? 2 : 0) + ((volTvl > 20 && priceChange5m < -5) ? 3 : 0);
+            const momentum = (priceChange * 0.5) + (volSpike * 5) + (buySellRatio * 4);
+
+            return { volSpike, buySellRatio, buySellRatio1m, volTvl, liquidityRisk, momentum, whaleActive, whaleAccumulation, priceChange5m, avgTxSize24, avgTxSize1m, buys1m, sells1m, totalTx1m, isBotSpam, isBuyDominant };
+        }
+
+        function computeMeteoraScore(p) {
+            const vol = p.vol24h || 0;
+            const tvl = p.tvl || 1;
+            
+            let fees = p.fees24h !== null ? p.fees24h : (vol * ((p.feePct || 0.3) / 100));
+            
+            let apr = 0;
+            if (tvl >= 1000 && fees > 0) {
+                apr = (fees / tvl) * 365 * 100;
+                if (apr > 999.99) apr = 999.99; 
+            }
+            p.aprEst = apr; 
+            
+            const volTvl = vol / tvl;
+            
+            let score = 0;
+            score += Math.log10(vol + 1) * 30; 
+            score += Math.min(apr, 500) / 10; 
+            score += Math.min(volTvl, 100) * 15; 
+            
+            if (p.ageHours !== null && p.ageHours < 72) score += 20; 
+            if (tvl > 5000000) score -= 30; 
+
+            return score;
+        }
+
+        function computeAlphaScore(p, avgVol = 0) {
+            const m = computeAdvancedMetrics(p, avgVol);
+            const age = p.ageHours || 999;
+            
+            let score = 50; 
+
+            if (m.isBotSpam) return 0; 
+
+            score += Math.min(m.volSpike * 5, 15);
+            score += Math.min(m.buySellRatio * 5, 15);
+
+            if (m.volTvl > 0.5 && m.volTvl < 5) score += 20;
+            else if (m.volTvl >= 5 && m.volTvl <= 15) score += 10;
+
+            if (m.whaleAccumulation) score += 20;
+            if (age < 24) score += 10;
+
+            if (m.volTvl > 20 && Math.abs(m.priceChange5m) < 1) score -= 30;
+            if (p.priceChange < -40 && !m.isBuyDominant) score -= 30;
+            score -= (m.liquidityRisk * 10);
+
+            return Math.max(0, Math.min(100, Math.floor(score)));
+        }
+
+        function getVolatilityProfile(pool) {
+            const change = Number.isFinite(pool.priceChange) ? Math.abs(pool.priceChange) : 0;
+            const volTvl = (pool.tvl > 0 && pool.vol24h > 0) ? pool.vol24h / pool.tvl : 0;
+            const age = pool.ageHours ?? 999;
+            const bin = Number(pool.binStep || 0);
+
+            const volatilityScore = (change * 2) + (volTvl * 20) + (bin / 4) + (age < 48 ? 12 : age < 168 ? 4 : 0);
+
+            let regime = "low";
+            if (volatilityScore >= 80) regime = "extreme";
+            else if (volatilityScore >= 50) regime = "high";
+            else if (volatilityScore >= 25) regime = "medium";
+
+            return { volatilityScore, regime, change, volTvl, age, bin };
+        }
+
+        function buildStrategy(pool, beData = null) {
+            const v = getVolatilityProfile(pool);
+            let recommendation = ""; let recColor = ""; let text = "";
+
+            let isMintable = false;
+            let isFreezable = false;
+            let top10pct = 0;
+            let creatorPct = 0;
+
+            if (beData) {
+                isMintable = beData.mintAuthority !== null && beData.mintAuthority !== undefined && beData.mintAuthority !== "";
+                isFreezable = beData.freezeAuthority !== null && beData.freezeAuthority !== undefined && beData.freezeAuthority !== "";
+                top10pct = beData.top10HolderPercent || 0;
+                creatorPct = beData.creatorPercentage || 0;
+            }
+
+            if (currentView === 'alpha' || pool.isExternal) {
+                const m = computeAdvancedMetrics(pool);
+                const score = pool.sniperScore || 0;
+                
+                if (m.isBotSpam) {
+                    recommendation = "AVOID / BOT SPAM DETECTED"; recColor = "#ef4444";
+                    text = "🚨 Aktivitas 'Wash Trade' terdeteksi. Transaksi didominasi bot dengan rata-rata nominal sangat kecil untuk memanipulasi metrik tren.";
+                } else if (top10pct > 0.8) {
+                    recommendation = "HIGH RISK / WALLET CONCENTRATION"; recColor = "#ef4444";
+                    text = `⚠️ Birdeye mendeteksi risiko Rug Pull. ${(top10pct*100).toFixed(0)}% suplai dikuasai oleh Top 10 Holder. Sangat rentan dumping besar-besaran.`;
+                } else if (creatorPct > 0.5) {
+                    recommendation = "HIGH RISK / CREATOR HOARDING"; recColor = "#ef4444";
+                    text = `⚠️ Kreator token menahan suplai sangat besar (${(creatorPct*100).toFixed(0)}%). Risiko exit liquidity sangat tinggi.`;
+                } else if ((pool.priceChange || 0) <= -20 && m.isBuyDominant) {
+                    recommendation = "POTENTIAL REBOUND (DIP ACCUM)"; recColor = "#10b981";
+                    text = "🐋 Smart Money mengakumulasi pada saat tren harga turun (Dip). Dominasi volume Buy sangat signifikan. Gunakan titik entri bertahap dengan stop-loss ketat.";
+                } else if (score < 40) {
+                    recommendation = "AVOID / WEAK MOMENTUM"; recColor = "#ef4444";
+                    text = "⚠️ Model mendeteksi kualitas volume yang memburuk atau momentum yang mengering. Tingkat volatilitas tidak sepadan dengan likuiditas.";
+                } else if (m.whaleAccumulation && score > 60) {
+                    recommendation = "BUY NOW (STRONG ORGANIC)"; recColor = "#10b981";
+                    text = "🚀 Momentum sehat terkonfirmasi. Terdapat lonjakan rata-rata ukuran transaksi didominasi oleh Buyer organik. Konfirmasi aksi akumulasi skala besar.";
+                } else if (m.volSpike < 1 && (pool.priceChange || 0) > 40) {
+                    recommendation = "WAIT (OVEREXTENDED)"; recColor = "#f59e0b";
+                    text = "Harga telah reli tinggi namun volume injeksi baru mulai mendingin. Berisiko terkoreksi. Tunggu titik support untuk konfirmasi arah.";
+                } else {
+                    recommendation = "WATCHLIST (NEUTRAL)"; recColor = "#3b82f6";
+                    text = "Aktivitas pasar wajar tanpa anomali ekstrem. Pertahankan di pantauan hingga algoritma mendeteksi lonjakan volume.";
+                }
+            } else {
+                if (isMintable || isFreezable) {
+                    recommendation = "HIGH RISK LP (MINT/FREEZE ACTIVE)"; recColor = "#ef4444";
+                    text = "⚠️ PERINGATAN: Otoritas sentral (Mint/Freeze) masih aktif menurut audit Birdeye. Sangat berisiko untuk penyediaan likuiditas jangka panjang.";
+                } else if (v.regime === "extreme") {
+                    recommendation = "AGGRESSIVE / WIDE RANGE"; recColor = "#ef4444";
+                    text = "Volatilitas ekstrem. Hindari penyediaan likuiditas sempit (Curve). Gunakan Spot/Bid-Ask dengan bin lebar untuk mitigasi Impermanent Loss.";
+                } else if (v.regime === "high") {
+                    recommendation = "CAUTIOUS / WIDE RANGE"; recColor = "#f59e0b";
+                    text = "Volatilitas sedang menuju tinggi. Cocok untuk rentang menengah-lebar. Hindari parameter terlalu padat karena risiko lonjakan harga seketika.";
+                } else if (v.regime === "medium") {
+                    recommendation = "BALANCED / CONCENTRATED"; recColor = "#10b981";
+                    text = "Kondisi pasar stabil. Likuiditas terpusat (Concentrated) sangat ideal untuk menangkap volume transaksi (fee capture) maksimal.";
+                } else {
+                    recommendation = "STABLE / TIGHT RANGE"; recColor = "#3b82f6";
+                    text = "Pergerakan harga tenang. Strategi rentang ketat (Tight Range) efisien. Pilihan tepat untuk akumulasi yield persentase tinggi.";
+                }
+            }
+
+            return { recommendation, recColor, text, v };
+        }
+
+        function switchView(view) {
+            if (currentView === view) return;
+            currentView = view;
+            
+            if (ctrlMeteora && view !== 'meteora') { ctrlMeteora.abort(); isMeteoraLoading = false; }
+            if (ctrlAlpha && view !== 'alpha') { ctrlAlpha.abort(); isAlphaLoading = false; }
+            if (ctrlSearch) { ctrlSearch.abort(); }
+            
+            searchQuery = "";
+            document.getElementById('searchInput').value = "";
+            
+            document.getElementById('poolList').innerHTML = '';
+            updateStaleBadge(false);
+            hideInfoBox();
+
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            const statusArea = document.getElementById('statusArea');
+
+            if(view === 'meteora') {
+                document.getElementById('btnMeteora').classList.add('active');
+                document.getElementById('colFeeBin').innerText = "APR Proxy (Est)";
+                
+                if (poolsData.length === 0) {
+                    statusArea.style.display = 'block';
+                    statusArea.innerText = 'Memuat Sistem Mesin Analitik Meteora...';
+                    loadPools();
+                } else {
+                    statusArea.style.display = 'none';
+                    applyFiltersAndRender();
+                }
+
+            } else if(view === 'alpha') {
+                const btnAlpha = document.getElementById('btnAlpha');
+                btnAlpha.classList.add('active');
+                document.getElementById('colFeeBin').innerText = "Market Cap";
+                
+                if (alphaData.length === 0) {
+                    statusArea.style.display = 'block';
+                    statusArea.innerText = 'Algoritma mengekstrak data pasar organik (Non-API bias)...';
+                    fetchAlphaSignals();
+                } else {
+                    statusArea.style.display = 'none';
+                    applyFiltersAndRender();
+                }
+            }
+        }
+
+        function filterPoolsByAddress(q) {
+            const term = normalizeAddressInput(q).toLowerCase();
+            if (!term) return currentView === 'meteora' ? poolsData : alphaData;
+
+            const targetData = currentView === 'meteora' ? poolsData : alphaData;
+            
+            const exactMatch = targetData.filter(p => p.address.toLowerCase() === term || p.tokenMint.toLowerCase() === term);
+            if (exactMatch.length > 0) return exactMatch;
+
+            return targetData.filter(p => {
+                const fields = [p.address, p.tokenMint, p.altMint, p.name].filter(Boolean).map(v => String(v).toLowerCase());
+                return fields.some(v => v.includes(term));
+            });
+        }
+
+        async function executeSearch() {
+            const q = document.getElementById('searchInput').value;
+            searchQuery = q;
+            hideInfoBox();
+            
+            const filtered = filterPoolsByAddress(q);
+
+            if (filtered.length > 0) {
+                renderList(filtered);
+            } else {
+                renderList([]);
+                if (q.length >= 2) {
+                    await fetchSearchDirectly(q);
+                } else {
+                    showToast("Masukkan Ticker atau CA yang valid.");
+                }
+            }
+        }
+
+        async function fetchSearchDirectly(q) {
+            if (ctrlSearch) ctrlSearch.abort();
+            ctrlSearch = new AbortController();
+            const signal = ctrlSearch.signal;
+
+            const statusArea = document.getElementById('statusArea');
+            statusArea.style.display = 'block'; 
+            statusArea.innerText = 'Pencarian memindai DexScreener...';
+
+            try {
+                const res = await fetchWithCache(`https://api.dexscreener.com/latest/dex/search?q=${q}`, 60000, signal);
+                if (signal?.aborted) return;
+
+                const solPairs = (res?.pairs || []).filter(p => p.chainId === 'solana');
+
+                if (Array.isArray(solPairs) && solPairs.length > 0) {
+                    solPairs.forEach((pair, i) => {
+                        const pairAddr = pair.pairAddress || pair.url?.split('/').pop() || "";
+                        if (!alphaData.find(p => p.address === pairAddr)) {
+                            const newExt = {
+                                name: `${pair.baseToken?.symbol || 'UN'}/${pair.quoteToken?.symbol || 'KN'}`,
+                                address: pairAddr, tokenMint: pair.baseToken?.address || "", altMint: pair.quoteToken?.address || "",
+                                feePct: null, maxFeePct: null, currentFeePct: null, binStep: null,
+                                vol24h: Number(pair.volume?.h24 || 0), fees24h: null, tvl: Number(pair.liquidity?.usd || 0),
+                                price: Number(pair.priceUsd || 0), dexData: pair,
+                                logoUrl: pair.info?.imageUrl || pair.baseToken?.logoURI || `https://api.dicebear.com/9.x/identicon/svg?seed=${pair.baseToken?.address || i}&backgroundColor=1e1e1e`,
+                                priceChange: getBestPriceChange(pair),
+                                dexPrice: Number(pair.priceUsd || 0), pairAddress: pairAddr,
+                                ageHours: pair.pairCreatedAt ? (Date.now() - pair.pairCreatedAt) / 3600000 : null,
+                                isExternal: true, rank: 0, trueRank: 0
+                            };
+                            newExt.sniperScore = computeAlphaScore(newExt);
+                            alphaData.unshift(newExt);
+                        }
+                    });
+                    if (currentView !== 'alpha') switchView('alpha');
+                    applyFiltersAndRender();
+                } else {
+                    statusArea.style.display = 'none';
+                    showInfoBox("Pencarian Kosong", "Tidak ada token valid yang ditemukan dari hasil pencarian Anda.");
+                }
+            } catch (e) { 
+                if(e.name !== 'AbortError') {
+                    statusArea.style.display = 'none';
+                    showInfoBox("Koneksi Lemah", "Permintaan pencarian memakan waktu terlalu lama. Coba sesaat lagi.", true);
+                }
+            }
+        }
+
+        document.getElementById('searchBtn').onclick = executeSearch;
+        document.getElementById('searchInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') executeSearch(); });
+
+        async function loadPools() {
+            if (isMeteoraLoading || currentView !== 'meteora') return; 
+            
+            if (Date.now() - lastMeteoraFetch < 15000) return;
+            lastMeteoraFetch = Date.now();
+
+            isMeteoraLoading = true;
+            hideInfoBox();
+            
+            if (ctrlMeteora) ctrlMeteora.abort();
+            ctrlMeteora = new AbortController();
+            const signal = ctrlMeteora.signal;
+
+            const statusArea = document.getElementById('statusArea');
+            if (poolsData.length === 0) {
+                statusArea.style.display = 'block';
+                statusArea.innerText = 'Mengakses Data DLMM Meteora...';
+            }
+
+            try {
+                const [boostsRes, profilesRes] = await Promise.allSettled([
+                    fetchWithCache('https://api.dexscreener.com/token-boosts/top/v1', 60000, signal),
+                    fetchWithCache('https://api.dexscreener.com/token-profiles/latest/v1', 60000, signal)
+                ]);
+                
+                if (signal?.aborted) return;
+
+                let mintAddressesToFetch = [];
+                if (boostsRes.status === 'fulfilled' && Array.isArray(boostsRes.value)) {
+                    mintAddressesToFetch.push(...boostsRes.value.map(x => x.tokenAddress));
+                }
+                if (profilesRes.status === 'fulfilled' && Array.isArray(profilesRes.value)) {
+                    mintAddressesToFetch.push(...profilesRes.value.map(x => x.tokenAddress));
+                }
+
+                if (mintAddressesToFetch.length === 0) {
+                     mintAddressesToFetch = [
+                        'So11111111111111111111111111111111111111112', 
+                        'JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbAbdFSvAwwR', 
+                        'DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263', 
+                        '7bgwMxtD82B9U1uHWe3VXX34bUfX6sB428KXXEGEZ3Xh'  
+                     ];
+                }
+
+                const uniqueMints = [...new Set(mintAddressesToFetch.filter(m => m && isValidSolAddress(m)))];
+                
+                statusArea.innerText = 'Menyaring Pair DLMM Meteora...';
+
+                let allMeteoraPairs = [];
+                
+                // --- PAKSA FETCH PINNED TOKENS ---
+                const pinnedDexData = await fetchPinnedTokens(signal);
+                if (pinnedDexData.length > 0) {
+                     // Hanya ambil yg DLMM Meteora untuk menu ini
+                     allMeteoraPairs.push(...pinnedDexData.filter(x => x.dexId === 'meteora'));
+                }
+
+                for(let i=0; i < uniqueMints.length; i+=30) {
+                    const chunk = uniqueMints.slice(i, i+30).join(',');
+                    const res = await fetchWithCache(`https://api.dexscreener.com/latest/dex/tokens/${chunk}`, 30000, signal).catch(()=>null);
+                    if (signal?.aborted) return;
+                    
+                    if(res && res.pairs) {
+                        const filteredPairs = res.pairs.filter(x => x.chainId === 'solana' && x.dexId === 'meteora');
+                        allMeteoraPairs.push(...filteredPairs);
+                    }
+                    await sleep(200); 
+                }
+
+                if (allMeteoraPairs.length === 0) throw new Error("Tidak ada pool Meteora ditemukan.");
+
+                const mappedData = allMeteoraPairs.map((dex, index) => {
+                    const tokenMint = dex.baseToken?.address;
+                    const altMint = dex.quoteToken?.address;
+                    const vol24h = Number(dex.volume?.h24 || 0);
+                    const tvl = Number(dex.liquidity?.usd || 0);
+                    
+                    const assumedFeePct = 0.3; 
+                    const estimatedFees24h = vol24h * (assumedFeePct / 100);
+
+                    const newPool = {
+                        name: `${dex.baseToken?.symbol || 'UN'}/${dex.quoteToken?.symbol || 'KN'}`,
+                        address: dex.pairAddress,
+                        tokenMint: tokenMint,
+                        altMint: altMint,
+                        feePct: null, 
+                        maxFeePct: null,
+                        vol24h: vol24h, 
+                        fees24h: estimatedFees24h,
+                        tvl: tvl,
+                        dexData: dex, 
+                        logoUrl: dex.info?.imageUrl || dex.baseToken?.logoURI || `https://api.dicebear.com/9.x/identicon/svg?seed=${tokenMint || index}&backgroundColor=1e1e1e`, 
+                        priceChange: getBestPriceChange(dex),
+                        dexPrice: Number(dex.priceUsd || 0), 
+                        pairAddress: dex.pairAddress,
+                        ageHours: dex.pairCreatedAt ? (Date.now() - dex.pairCreatedAt) / 3600000 : null,
+                        isExternal: false,
+                        binStep: null 
+                    };
+                    
+                    newPool.trendScore = computeMeteoraScore({
+                        vol24h: newPool.vol24h, 
+                        tvl: newPool.tvl, 
+                        fees24h: newPool.fees24h, 
+                        ageHours: newPool.ageHours
+                    });
+                    
+                    newPool.aprEst = (newPool.tvl >= 1000 && newPool.fees24h > 0) ? Math.min((newPool.fees24h / newPool.tvl) * 365 * 100, 999.99) : 0;
+
+                    return newPool;
+                });
+
+                // Abaikan filter ketat jika token di-pin agar selalu muncul
+                const validPools = mappedData.filter(p => pinnedTokens.has(p.address) || (p.dexPrice > 0 && p.vol24h >= 500 && p.tvl >= 500));
+                
+                const uniquePoolsMap = new Map();
+                validPools.forEach(p => {
+                    if (!uniquePoolsMap.has(p.address) || p.tvl > uniquePoolsMap.get(p.address).tvl) {
+                        uniquePoolsMap.set(p.address, p);
+                    }
+                });
+                const finalUniquePools = Array.from(uniquePoolsMap.values());
+
+                if (finalUniquePools.length > 0) {
+                    const ranked = finalUniquePools.sort((a, b) => b.trendScore - a.trendScore).slice(0, 30);
+                    ranked.forEach((p, idx) => p.rank = idx + 1);
+                    poolsData = ranked;
+                    updateStaleBadge(false);
+                } 
+
+                if (currentView === 'meteora') applyFiltersAndRender();
+                
+                if (selectedPoolKey) {
+                    const t = poolsData.find(p => p.address === selectedPoolKey);
+                    if(t) { try { fillModalData(t); } catch(e){} }
+                }
+
+            } catch (err) {
+                if(err.name !== 'AbortError') {
+                    if (poolsData.length > 0) {
+                        updateStaleBadge(true); 
+                    } else {
+                        if (statusArea) statusArea.style.display = 'none';
+                        showInfoBox("Kendala API Agregator", "Gagal memuat pool Meteora dari DexScreener. Pastikan koneksi stabil.", true);
+                    }
+                }
+            } finally { 
+                isMeteoraLoading = false; 
+                if (statusArea && (poolsData.length > 0 || document.getElementById('systemInfo').classList.contains('show'))) {
+                    statusArea.style.display = 'none';
+                }
+            }
+        }
+
+        async function fetchAlphaSignals() {
+            if (isAlphaLoading || currentView !== 'alpha') return; 
+            
+            if (Date.now() - lastAlphaFetch < 15000) return;
+            lastAlphaFetch = Date.now();
+
+            isAlphaLoading = true;
+            hideInfoBox();
+            
+            if (ctrlAlpha) ctrlAlpha.abort();
+            ctrlAlpha = new AbortController();
+            const signal = ctrlAlpha.signal;
+
+            const statusArea = document.getElementById('statusArea');
+            if (alphaData.length === 0) {
+                statusArea.style.display = 'block'; 
+                statusArea.innerText = 'Algoritma mengekstrak data pasar organik...';
+            }
+
+            try {
+                const [bRes, pRes] = await Promise.allSettled([
+                    fetchWithCache('https://api.dexscreener.com/token-boosts/top/v1', 60000, signal),
+                    fetchWithCache('https://api.dexscreener.com/token-profiles/latest/v1', 60000, signal)
+                ]);
+                
+                if (signal?.aborted) return;
+
+                let rawMints = [];
+                if (bRes.status === 'fulfilled' && Array.isArray(bRes.value)) {
+                    rawMints.push(...bRes.value.map(x => x.tokenAddress));
+                }
+                if (pRes.status === 'fulfilled' && Array.isArray(pRes.value)) {
+                    rawMints.push(...pRes.value.map(x => x.tokenAddress));
+                }
+                
+                const uniqueMints = [...new Set(rawMints.filter(m => m && !IGNORED_MINTS.has(m)))];
+
+                let allPairs = [];
+
+                // --- PAKSA FETCH PINNED TOKENS ---
+                const pinnedDexData = await fetchPinnedTokens(signal);
+                if (pinnedDexData.length > 0) {
+                     allPairs.push(...pinnedDexData);
+                }
+
+                for(let i=0; i < uniqueMints.length; i+=30) {
+                    const chunk = uniqueMints.slice(i, i+30).join(',');
+                    const res = await fetchWithCache(`https://api.dexscreener.com/latest/dex/tokens/${chunk}`, 30000, signal).catch(()=>null);
+                    if (signal?.aborted) return;
+                    if(res && res.pairs) {
+                         // PASTIKAN HANYA SOLANA CHAIN
+                         allPairs.push(...res.pairs.filter(x => x.chainId === 'solana' && !IGNORED_MINTS.has(x.baseToken?.address)));
+                    }
+                }
+
+                const uniquePairsMap = new Map();
+                allPairs.forEach(p => uniquePairsMap.set(p.pairAddress, p));
+                const finalRawPairs = Array.from(uniquePairsMap.values());
+
+                if (finalRawPairs.length === 0) throw new Error("Data Kosong");
+
+                finalRawPairs.sort((a,b) => (Number(b.volume?.h24) || 0) - (Number(a.volume?.h24) || 0));
+
+                const candidates = [];
+                for (let i = 0; i < finalRawPairs.length; i++) {
+                    const pair = finalRawPairs[i];
+                    const p = {
+                        name: `${pair.baseToken?.symbol || 'UN'}/${pair.quoteToken?.symbol || 'KN'}`,
+                        address: pair.pairAddress, tokenMint: pair.baseToken?.address || "", altMint: pair.quoteToken?.address || "",
+                        feePct: null, maxFeePct: null, currentFeePct: null, binStep: null,
+                        vol24h: Number(pair.volume?.h24 || 0), fees24h: null, tvl: Number(pair.liquidity?.usd || 0),
+                        price: Number(pair.priceUsd || 0), dexData: pair,
+                        logoUrl: pair.info?.imageUrl || pair.baseToken?.logoURI || `https://api.dicebear.com/9.x/identicon/svg?seed=${pair.baseToken?.address || i}&backgroundColor=1e1e1e`,
+                        priceChange: getBestPriceChange(pair),
+                        dexPrice: Number(pair.priceUsd || 0), pairAddress: pair.pairAddress,
+                        ageHours: pair.pairCreatedAt ? (Date.now() - pair.pairCreatedAt) / 3600000 : null,
+                        isExternal: true, rank: 0, trueRank: i + 1 
+                    };
+                    candidates.push(p);
+                }
+
+                const totalVol = candidates.reduce((sum, p) => sum + (p.vol24h || 0), 0);
+                const avgVol = candidates.length > 0 ? totalVol / candidates.length : 0;
+
+                const validMemes = candidates.filter(p => {
+                    if (pinnedTokens.has(p.address)) return true; // Lolos tanpa syarat jika di-pin
+
+                    const fdv = p.dexData?.fdv || 0;
+                    const tvl = p.tvl || 0;
+                    const vol24 = p.vol24h || 0;
+                    
+                    const m = computeAdvancedMetrics(p, avgVol);
+
+                    return fdv >= 10000 && fdv <= 25000000 && 
+                           tvl >= 3000 && 
+                           vol24 >= 50000 && 
+                           !m.isBotSpam &&
+                           m.isBuyDominant &&
+                           m.volSpike >= 1.0 &&
+                           p.priceChange >= -70;
+                });
+
+                validMemes.forEach(p => p.sniperScore = computeAlphaScore(p, avgVol));
+
+                const filteredList = validMemes.sort((a,b) => b.sniperScore - a.sniperScore)
+                                             .slice(0, 30)
+                                             .filter(p => pinnedTokens.has(p.address) || p.sniperScore >= 20);
+
+                if (filteredList.length > 0) {
+                    alphaData = filteredList;
+                    updateStaleBadge(false);
+                } else if (alphaData.length === 0) {
+                     if (statusArea) statusArea.style.display = 'none';
+                     showInfoBox("Radar Standby", "Saat ini belum ada token dominasi beli yang lulus filter anti-bot.");
+                }
+
+                if (filteredList.length > 0 && currentView === 'alpha') {
+                    applyFiltersAndRender();
+                }
+
+            } catch (e) {
+                if(e.name !== 'AbortError') {
+                    if (alphaData.length > 0) {
+                        updateStaleBadge(true); 
+                    } else {
+                        if (statusArea) statusArea.style.display = 'none';
+                        showInfoBox("Akses Dibatasi", "Agregator membatasi permintaan Anda. Sistem akan menyegarkan otomatis.", true);
+                    }
+                }
+            } finally {
+                isAlphaLoading = false;
+                if (statusArea && (alphaData.length > 0 || document.getElementById('systemInfo').classList.contains('show'))) {
+                    statusArea.style.display = 'none';
+                }
+            }
+        }
+
+        function applyFiltersAndRender() {
+            let data = currentView === 'meteora' ? poolsData.slice() : alphaData.slice();
+            
+            data.sort((a, b) => {
+                const aPinned = pinnedTokens.has(a.address) ? 1 : 0;
+                const bPinned = pinnedTokens.has(b.address) ? 1 : 0;
+                if (aPinned !== bPinned) return bPinned - aPinned;
+                return (b.trendScore || b.sniperScore) - (a.trendScore || a.sniperScore);
+            });
+
+            if (searchQuery) {
+                const term = normalizeAddressInput(searchQuery).toLowerCase();
+                data = data.filter(p => [p.address, p.tokenMint, p.altMint, p.name].filter(Boolean).map(v=>String(v).toLowerCase()).some(v=>v.includes(term)));
+            }
+            
+            const colHeader = document.getElementById('colFeeBin');
+            if (colHeader) {
+                colHeader.innerText = currentView === 'alpha' ? 'Market Cap' : 'APR Proxy (Est)';
+            }
+            
+            if (data.length > 0) {
+                document.getElementById('statusArea').style.display = 'none';
+            }
+
+            renderList(data);
+        }
+
+        function renderList(dataToRender) {
+            const container = document.getElementById('poolList');
+            container.innerHTML = '';
+            
+            if (!dataToRender || dataToRender.length === 0) return; 
+
+            const batchRender = dataToRender.slice(0, 20);
+            let bestBuyShown = false;
+
+            batchRender.forEach((pool, index) => {
+                const isAlpha = pool.isExternal || currentView === 'alpha';
+                const isPinned = pinnedTokens.has(pool.address);
+                
+                let col1Html = "";
+                if (isAlpha) {
+                    const fdv = pool.dexData?.fdv !== undefined ? pool.dexData.fdv : null;
+                    col1Html = `<div class="metric-val text-primary">${fdv !== null ? formatMoney(fdv) : '—'}</div>`;
+                } else {
+                    let aprText = '—';
+                    if (pool.aprEst > 0) {
+                        aprText = pool.aprEst >= 999.99 ? '>999%' : formatNum(pool.aprEst) + '%';
+                    }
+                    col1Html = `<div class="metric-val text-green">${aprText}</div>`;
+                }
+
+                const displayCA = pool.tokenMint || pool.altMint || pool.address || "N/A";
+                const trColor = (pool.priceChange !== null && pool.priceChange !== undefined && !Number.isNaN(pool.priceChange)) 
+                    ? (pool.priceChange > 0 ? 'text-green' : (pool.priceChange < 0 ? 'text-red' : 'text-secondary')) 
+                    : 'text-secondary';
+
+                let badgesHTML = '';
+                if (isAlpha) badgesHTML += `<span class="badge badge-alpha">SCORE: ${pool.sniperScore || 0}</span>`;
+                if (pool.ageHours !== null && pool.ageHours < 48) badgesHTML += `<span class="badge badge-new">New</span>`;
+                
+                if (!isAlpha && pool.aprEst > 0) {
+                    const aprBadge = pool.aprEst >= 999.99 ? '>999%' : formatNum(pool.aprEst) + '%';
+                    badgesHTML += `<span class="badge badge-hot">APR: ${aprBadge}</span>`;
+                }
+                
+                if (isAlpha && (pool.sniperScore > 60 || pool.priceChange <= -20)) {
+                    if (!bestBuyShown) {
+                        badgesHTML += `<span class="badge badge-buy">⭐ BEST ENTRY</span>`;
+                        bestBuyShown = true;
+                    } else {
+                        badgesHTML += `<span class="badge badge-hot">🔥 HOT</span>`; 
+                    }
+                }
+
+                const rankDisp = isAlpha ? pool.trueRank : (pool.rank || index + 1);
+                const rankLbl = isAlpha ? 'GLOB' : 'RANK';
+
+                const html = `
+                    <div class="pool-item" onclick="openModal('${pool.address}')">
+                        <button class="pin-btn pool-item-pin ${isPinned ? 'active' : ''}" onclick="togglePin('${pool.address}', event)" title="Pantau">
+                            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="${isPinned ? 'currentColor' : 'none'}" stroke-linecap="round" stroke-linejoin="round">
+                                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                            </svg>
+                        </button>
+                        <div class="pool-info">
+                            <div class="pool-rank">
+                                <span class="rank-number">#${rankDisp}</span>
+                                <span class="rank-label">${rankLbl}</span>
+                            </div>
+                            <img src="${pool.logoUrl}" class="pool-logo" loading="lazy" referrerpolicy="no-referrer" onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNjY2IiBzdHJva2Utd2lkdGg9IjIiPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjEwIi8+PC9zdmc+'">
+                            <div class="pool-name-box">
+                                <div class="pool-name truncate">${escapeHTML(pool.name)}</div>
+                                <div class="badges-container">${badgesHTML}</div>
+                                <div class="pool-ca truncate" style="margin-top: 4px;">CA: ${formatAddress(displayCA)}</div>
+                            </div>
+                        </div>
+
+                        <div class="pool-metrics">
+                            <div class="metric-col"><div class="metric-label">${isAlpha ? 'Market Cap' : 'APR Proxy (Est)'}</div>${col1Html}</div>
+                            <div class="metric-col"><div class="metric-label">Vol 24H</div><div class="metric-val text-primary">${pool.vol24h !== null ? formatMoney(pool.vol24h) : '—'}</div></div>
+                            <div class="metric-col"><div class="metric-label">Trend</div><div class="metric-val ${trColor}">${formatPct(pool.priceChange)}</div></div>
+                        </div>
+                    </div>`;
+                container.insertAdjacentHTML('beforeend', html);
+            });
+
+            if (activeModalData) {
+                const updatedPool = dataToRender.find(p => p.address === activeModalData.address);
+                if (updatedPool) activeModalData = { ...updatedPool };
+            }
+        }
+
+        function safeSetText(id, text, colorClass = '') {
+            safeExec(() => {
+                const el = document.getElementById(id);
+                if (el) { 
+                    el.innerText = text; 
+                    if (colorClass) el.className = colorClass.includes('text-') && !colorClass.includes('metric-val') ? `metric-val ${colorClass}` : colorClass;
+                }
+            });
+        }
+
+        function fillModalData(pool) {
+            if (!pool) return;
+            const dex = pool.dexData;
+            const isAlpha = pool.isExternal || currentView === 'alpha';
+            const isPinned = pinnedTokens.has(pool.address);
+            
+            let finalMc = dex?.fdv !== undefined ? dex.fdv : null;
+
+            const feeText = isAlpha ? '—' : normalizeFeeText(pool.feePct);
+            const binText = isAlpha ? '—' : (pool.binStep !== null ? pool.binStep : '—');
+            const displayCA = pool.tokenMint || pool.altMint || pool.address || "N/A";
+            const chartAddress = pool.pairAddress || pool.address || displayCA;
+
+            const logoEl = document.getElementById('mLogo');
+            if (logoEl) {
+                logoEl.src = pool.logoUrl;
+                logoEl.onerror = function() {
+                    this.onerror = null;
+                    this.src = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNjY2IiBzdHJva2Utd2lkdGg9IjIiPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjEwIi8+PC9zdmc+";
+                };
+            }
+            safeSetText('mName', pool.name);
+            
+            const modalPin = document.getElementById('modalPinBtn');
+            if (modalPin) {
+                modalPin.classList.toggle('active', isPinned);
+                modalPin.innerHTML = isPinned 
+                    ? `<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="currentColor" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>`
+                    : `<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>`;
+            }
+
+            const subtitleEl = document.getElementById('mSubtitle');
+            if (subtitleEl) subtitleEl.innerText = isAlpha ? `DEXScreener | Rank Global #${pool.trueRank}` : `DLMM | Bin: ${binText} | Fee: ${feeText}`;
+
+            const activePrice = Number(pool.dexPrice || pool.price || 0);
+            const activeTvlRatio = pool.binStep !== null && pool.binStep < 20 ? 0.15 : (pool.binStep !== null && pool.binStep > 80 ? 0.40 : 0.25);
+            const activeTvl = pool.tvl !== null && pool.tvl > 0 ? pool.tvl * activeTvlRatio : null;
+            
+            let finalFees24h = pool.fees24h !== null ? pool.fees24h : (pool.vol24h !== null && pool.feePct !== null ? pool.vol24h * (pool.feePct/100) : null);
+            let finalMaxFee = pool.maxFeePct !== null ? pool.maxFeePct : (pool.feePct !== null ? pool.feePct * 2 : null);
+            const feeTvlRatio = (finalFees24h !== null && pool.tvl !== null && pool.tvl > 0) ? (finalFees24h / pool.tvl) * 100 : null;
+
+            const buys1H = dex?.txns?.h1?.buys;
+            const sells1H = dex?.txns?.h1?.sells;
+            const buys24H = dex?.txns?.h24?.buys;
+            const sells24H = dex?.txns?.h24?.sells;
+
+            let ageStr = "—";
+            if (pool.ageHours !== null) {
+                if (pool.ageHours < 48) ageStr = `${pool.ageHours.toFixed(1)} Jam`;
+                else if (pool.ageHours > 8760) ageStr = `${(pool.ageHours/8760).toFixed(1)} Tahun`;
+                else ageStr = `${(pool.ageHours/24).toFixed(0)} Hari`;
+            }
+
+            // --- Conditional Rendering Panel Khusus Meteora ---
+            const wrapActiveTvl = document.getElementById('wrapActiveTvl');
+            const wrapFees = document.getElementById('wrapFees');
+            if (isAlpha) {
+                if(wrapActiveTvl) wrapActiveTvl.style.display = 'none';
+                if(wrapFees) wrapFees.style.display = 'none';
+            } else {
+                if(wrapActiveTvl) wrapActiveTvl.style.display = 'flex';
+                if(wrapFees) wrapFees.style.display = 'flex';
+            }
+
+            safeSetText('mPrice', activePrice > 0 ? (activePrice < 0.001 ? "$" + activePrice.toFixed(6) : formatMoney(activePrice)) : "—");
+            safeSetText('mMC', finalMc !== null ? formatMoney(finalMc) : "—");
+            safeSetText('mTVL', pool.tvl !== null ? formatMoney(pool.tvl) : "—");
+            safeSetText('mActiveTVL', activeTvl !== null ? formatMoney(activeTvl) : "—");
+            safeSetText('mVol', pool.vol24h !== null ? formatMoney(pool.vol24h) : "—");
+            safeSetText('mFees', finalFees24h !== null ? formatMoney(finalFees24h) : "—");
+            safeSetText('mAge', ageStr);
+            
+            const isPos = typeof pool.priceChange === 'number' && pool.priceChange > 0;
+            const isNeg = typeof pool.priceChange === 'number' && pool.priceChange < 0;
+            safeSetText('mChange', formatPct(pool.priceChange), typeof pool.priceChange === 'number' ? (isPos ? 'text-green' : (isNeg ? 'text-red' : 'text-secondary')) : 'text-secondary');
+
+            const mData = computeAdvancedMetrics(pool);
+            
+            // --- Logika Cerdas Format Waktu Transaksi ---
+            // Jika token umurnya kurang dari 1 jam (atau 1.5 jam), data 24H sama dengan data 1H/LifeTime.
+            const isVeryNew = pool.ageHours !== null && pool.ageHours < 1.5;
+            const lbl24H = isVeryNew ? 'All-Time B/S' : '24H Buys/Sells';
+            
+            let trades1hStr = (buys1H !== undefined && sells1H !== undefined) ? `${formatNum(buys1H)} B / ${formatNum(sells1H)} S` : "—";
+            let trades24hStr = (buys24H !== undefined && sells24H !== undefined) ? `${formatNum(buys24H)} B / ${formatNum(sells24H)} S` : "—";
+            let vol1HStr = dex?.volume?.h1 !== undefined ? formatMoney(dex.volume.h1) : "—";
+
+            // === MICROSTRUCTURE ISOLASI ID ===
+            if (isAlpha) {
+                safeSetText('lblMicro1', lbl24H);
+                safeSetText('valMicro1', trades24hStr);
+                
+                safeSetText('lblMicro2', '1H Buys/Sells');
+                safeSetText('valMicro2', trades1hStr);
+                
+                safeSetText('lblMicro3', '1H Volume');
+                safeSetText('valMicro3', vol1HStr);
+                
+                let whaleStatus = "Normal";
+                let whaleClass = "text-secondary";
+                if (mData.isBotSpam) { whaleStatus = "Bot Spam"; whaleClass = "text-red"; }
+                else if (mData.whaleAccumulation) { whaleStatus = "Accumulating"; whaleClass = "text-green"; }
+                else if (mData.whaleActive) { whaleStatus = "Whale Active"; whaleClass = "text-blue"; }
+                
+                safeSetText('lblMicro4', 'Volume Quality');
+                safeSetText('valMicro4', whaleStatus, whaleClass);
+
+                safeSetText('lblMicro5', '5M Vol Spike');
+                safeSetText('valMicro5', mData.volSpike.toFixed(1) + 'x');
+
+                safeSetText('lblMicro6', 'Avg Tx Size (1H)');
+                safeSetText('valMicro6', '$' + mData.avgTxSize1m.toFixed(1));
+            } else {
+                safeSetText('lblMicro1', 'Fee / TVL (24H)');
+                safeSetText('valMicro1', feeTvlRatio !== null ? feeTvlRatio.toFixed(2)+'%' : '—');
+                
+                safeSetText('lblMicro2', 'Max Dynamic Fee');
+                safeSetText('valMicro2', finalMaxFee !== null ? finalMaxFee+'%' : '—');
+                
+                safeSetText('lblMicro3', lbl24H);
+                safeSetText('valMicro3', trades24hStr);
+
+                safeSetText('lblMicro4', '1H Buys/Sells');
+                safeSetText('valMicro4', trades1hStr);
+
+                safeSetText('lblMicro5', '1H Volume');
+                safeSetText('valMicro5', vol1HStr);
+
+                safeSetText('lblMicro6', 'Avg Tx Size (24H)');
+                safeSetText('valMicro6', '$' + mData.avgTxSize24.toFixed(1));
+            }
+
+            // === RESET BIRDEYE UI SEBELUM FETCH ===
+            safeSetText('beHolders', 'Mengaudit...', 'text-secondary');
+            safeSetText('beMint', 'Mengaudit...', 'text-secondary');
+            safeSetText('beFreeze', 'Mengaudit...', 'text-secondary');
+            safeSetText('beCreator', 'Mengaudit...', 'text-secondary');
+
+            // Render awal
+            renderAIStrategyBox(pool, null, mData);
+
+            // === FETCH BIRDEYE SECURE ===
+            fetchBirdeyeSecurity(pool.tokenMint).then(beData => {
+                if(beData) {
+                    const top10 = beData.top10HolderPercent !== undefined ? beData.top10HolderPercent : 0;
+                    const creatorPct = beData.creatorPercentage !== undefined ? beData.creatorPercentage : 0;
+                    
+                    const isMint = beData.mintAuthority !== null && beData.mintAuthority !== undefined && beData.mintAuthority !== "";
+                    const isFreeze = beData.freezeAuthority !== null && beData.freezeAuthority !== undefined && beData.freezeAuthority !== "";
+
+                    safeSetText('beHolders', top10 > 0 ? (top10 * 100).toFixed(1) + '%' : 'Tidak Ada Data', top10 > 0.8 ? 'text-red' : (top10 > 0.5 ? 'text-orange' : 'text-green'));
+                    safeSetText('beCreator', creatorPct > 0 ? (creatorPct * 100).toFixed(1) + '%' : '0%', creatorPct > 0.1 ? 'text-red' : 'text-green');
+                    safeSetText('beMint', isMint ? "Ya 🚨" : "Tidak ✅", isMint ? "text-red" : "text-green");
+                    safeSetText('beFreeze', isFreeze ? "Ya 🚨" : "Tidak ✅", isFreeze ? "text-red" : "text-green");
+
+                    renderAIStrategyBox(pool, beData, mData);
+                } else {
+                    safeSetText('beHolders', 'Menunggu Index', 'text-secondary');
+                    safeSetText('beCreator', 'Menunggu Index', 'text-secondary');
+                    safeSetText('beMint', 'Menunggu Index', 'text-secondary');
+                    safeSetText('beFreeze', 'Menunggu Index', 'text-secondary');
+                }
+            });
+
+            const btnCopy = document.getElementById('mCopyBtn');
+            if (btnCopy) btnCopy.onclick = () => copyText(displayCA, 'CA');
+            
+            const btnDex = document.getElementById('mDexLinkBtn');
+            if (btnDex) btnDex.href = `https://dexscreener.com/solana/${chartAddress}`;
+
+            const btnRug = document.getElementById('mRugCheckBtn');
+            if (btnRug) btnRug.href = `https://rugcheck.xyz/tokens/${displayCA}`;
+            
+            const btnLink = document.getElementById('mLinkBtn');
+            if (btnLink) {
+                if (isAlpha) {
+                    btnLink.href = `https://raydium.io/swap/?inputCurrency=sol&outputCurrency=${displayCA}`;
+                } else {
+                    btnLink.href = `https://app.meteora.ag/dlmm/${pool.address}`;
+                }
+            }
+        }
+
+        function renderAIStrategyBox(pool, beData, mData) {
+            const aiBox = document.getElementById('aiOutput');
+            const isAlpha = pool.isExternal || currentView === 'alpha';
+            if (!aiBox) return;
+
+            try {
+                const strategy = buildStrategy(pool, beData);
+                let html = `
+                    <div class="ai-header">
+                        <span>REKOMENDASI SISTEM</span>
+                        <span class="ai-score-badge" style="color: ${strategy.recColor}; border-color: ${strategy.recColor};">${strategy.recommendation}</span>
+                    </div>
+                `;
+                
+                if (isAlpha) {
+                    html += `<p style="line-height: 1.6; color: #ececec; margin-bottom:12px;">${strategy.text}</p>`;
+                    html += `<div style="font-size:11px; padding:10px; background:rgba(255,255,255,0.05); border-radius:6px; color:var(--text-secondary);">`;
+                    html += `<b>Deep Dive Analytics (Birdeye + DexScreener):</b><br><br>`;
+                    html += `• Wash Trade / Bot Spam: ${mData.isBotSpam ? "<span style='color:var(--accent-red)'>⚠️ Terdeteksi</span>" : "<span style='color:var(--accent-green)'>✅ Bersih</span>"}<br>`;
+                    html += `• Avg Tx Size (1H): $${mData.avgTxSize1m.toFixed(1)} per transaksi<br>`;
+                    
+                    if (beData && beData.top10HolderPercent !== undefined) {
+                        html += `• Holder Concentration: <b>${(beData.top10HolderPercent * 100).toFixed(1)}%</b> dikuasai Top 10 Wallet.<br>`;
+                        if (beData.creatorPercentage > 0.1) html += `• Creator Holding: <span style="color:var(--accent-red)">${(beData.creatorPercentage * 100).toFixed(1)}% (Waspada Dumping)</span><br>`;
+                    } else if (!beData) {
+                        html += `• Holder Concentration: <span style="color:var(--accent-orange)">Menunggu Audit Birdeye...</span><br>`;
+                    }
+                    
+                    html += `• 5M Vol Spike: <b>${mData.volSpike.toFixed(1)}x</b> dari rata-rata 24j.`;
+                    html += `</div>`;
+                } else {
+                    html += `<div style="margin-bottom:12px;"><span style="color:white; font-weight:600;">1. Profil Volatilitas (Regime: ${strategy.v.regime.toUpperCase()}):</span><br>`;
+                    html += `Skor volatilitas: <b>${Math.floor(strategy.v.volatilityScore)}</b>. `;
+                    if (strategy.v.age < 48) html += `⚠️ Token baru rilis (< 48j). `;
+                    if (strategy.v.change > 15) html += `Pergerakan harga agresif. `;
+                    html += `</div>`;
+
+                    html += `<div style="margin-bottom:12px;"><span style="color:white; font-weight:600;">2. Efisiensi & Kepadatan:</span><br>`;
+                    if (strategy.v.volTvl > 1) html += `💰 <b>Sangat Baik:</b> Volume melampaui TVL. Perputaran uang cepat.`;
+                    else if (strategy.v.volTvl > 0 && strategy.v.volTvl < 0.2) html += `⚠️ <b>Rendah:</b> TVL terlalu padat dibanding volume. Uang mati berisiko.`;
+                    else html += `🟢 <b>Normal:</b> Rasio perputaran TVL di level wajar.`;
+                    html += `</div>`;
+
+                    html += `<div><span style="color:white; font-weight:600;">3. Protokol Eksekusi:</span><br>`;
+                    html += `<p style="margin-top:4px; line-height: 1.6; color: #ececec;">${strategy.text}</p></div>`;
+                }
+                aiBox.innerHTML = html;
+            } catch(e) {}
+        }
+
+        function openModal(addr) {
+            const targetData = currentView === 'meteora' ? poolsData : alphaData;
+            const pool = targetData.find(p => p.address === addr);
+            if(!pool) return;
+            
+            activeModalData = { ...pool };
+            selectedPoolKey = activeModalData.address;
+            
+            document.getElementById('analysisModal').classList.add('active');
+            requestAnimationFrame(() => fillModalData(activeModalData));
+        }
+
+        function closeModal() { 
+            document.getElementById('analysisModal').classList.remove('active'); 
+            selectedPoolKey = null; 
+            activeModalData = null;
+        }
+
+        function startAutoRefresh() {
+            if (refreshTimer) clearInterval(refreshTimer);
+            refreshTimer = setInterval(() => {
+                if (document.visibilityState === "visible") {
+                    if (currentView === 'meteora') loadPools();
+                    else fetchAlphaSignals();
+                }
+            }, 30000); 
+        }
+
+        document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === "visible") {
+                const now = Date.now();
+                if (currentView === 'meteora' && now - lastMeteoraFetch > 30000) loadPools();
+                else if (currentView === 'alpha' && now - lastAlphaFetch > 30000) fetchAlphaSignals();
+            }
+        });
+
+        window.onload = () => { 
+            loadPools(); 
+            startAutoRefresh(); 
+        };
+    </script>
+</body>
+</html>

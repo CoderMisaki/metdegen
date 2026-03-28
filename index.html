@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Meteora Alpha Terminal | Elite Pro</title>
+    <title>Meteora Alpha Terminal | Masako Engine</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -48,9 +48,10 @@
         .search-btn { flex: none; padding: 0 20px; border-radius: 10px; font-weight: 600; cursor: pointer; background: var(--text-primary); color: var(--bg-main); border:none; transition: transform 0.1s;}
         .search-btn:active { transform: scale(0.96); }
 
-        .filters { display: flex; gap: 10px; padding-bottom: 8px; margin-bottom: 16px; }
+        .filters { display: flex; gap: 10px; padding-bottom: 8px; margin-bottom: 16px; flex-wrap: wrap; }
         .filter-btn { background: var(--bg-panel); border: 1px solid var(--border-color); color: var(--text-secondary); padding: 10px 16px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: all 0.2s; flex: 1; display: flex; justify-content: center; align-items: center; gap: 8px; }
         .filter-btn.active { background: var(--text-primary); color: var(--bg-main); border-color: var(--text-primary); }
+        .filter-select { background: var(--bg-panel); border: 1px solid var(--border-color); color: var(--text-primary); padding: 10px 16px; border-radius: 10px; font-size: 13px; font-weight: 600; outline: none; flex: 1; cursor: pointer; }
 
         .pool-item { display: flex; flex-direction: column; padding: 16px; margin-bottom: 14px; background-color: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 12px; transition: background-color 0.2s, border-color 0.2s; cursor: pointer; gap: 12px; position: relative; overflow: hidden; }
         .pool-item:hover { background-color: var(--bg-hover); border-color: #555; }
@@ -75,14 +76,22 @@
         .badge-hot { background: rgba(245, 158, 11, 0.1); color: var(--accent-orange); border: 1px solid rgba(245, 158, 11, 0.2); }
         .badge-new { background: rgba(16, 185, 129, 0.1); color: var(--accent-green); border: 1px solid rgba(16, 185, 129, 0.2); }
         .badge-alpha { background: rgba(139, 92, 246, 0.1); color: var(--accent-purple); border: 1px solid rgba(139, 92, 246, 0.2); }
-        .badge-risky { background: rgba(239, 68, 68, 0.1); color: var(--accent-red); border: 1px solid rgba(239, 68, 68, 0.2); }
-        .badge-rank { background: rgba(59, 130, 246, 0.1); color: var(--accent-blue); border: 1px solid rgba(59, 130, 246, 0.2); }
         .badge-buy { background: var(--accent-green); color: #000; border: 1px solid #059669; box-shadow: 0 0 8px rgba(16, 185, 129, 0.3); }
+        .badge-dlmm { background: rgba(59, 130, 246, 0.1); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
 
         .pool-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; background-color: var(--bg-main); padding: 12px; border-radius: 12px; border: 1px solid var(--border-color); }
         .metric-col { display: flex; flex-direction: column; }
         .metric-label { font-size: 10px; color: var(--text-tertiary); text-transform: uppercase; margin-bottom: 4px; font-weight: 600; }
         .metric-val { font-size: 14px; font-weight: 600; }
+        .metric-small { font-size: 12px; font-weight: 600; }
+
+        /* Meteora Specific Grid */
+        .meteora-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; background-color: var(--bg-main); padding: 12px; border-radius: 12px; border: 1px solid var(--border-color); }
+        .m-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .m-item:last-child { border-bottom: none; }
+        .m-label { font-size: 11px; color: var(--text-secondary); font-weight: 500;}
+        .m-val { font-size: 12px; font-weight: 600; color: var(--text-primary); display: flex; flex-direction: column; align-items: flex-end; text-align: right;}
+        .m-subval { font-size: 9px; color: var(--accent-green); margin-top: 2px;}
 
         .modal-overlay { position: fixed; inset: 0; background-color: rgba(0, 0, 0, 0.85); backdrop-filter: blur(5px); display: flex; align-items: flex-end; justify-content: center; z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
         .modal-overlay.active { opacity: 1; pointer-events: auto; }
@@ -96,7 +105,7 @@
 
         .ai-box { background-color: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; font-size: 13px; line-height: 1.6; color: #d1d5db; min-height: 150px; }
         .ai-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border-color); }
-        .ai-score-badge { background-color: var(--bg-main); border: 1px solid var(--border-color); padding: 4px 10px; border-radius: 8px; font-weight: bold; font-family: monospace; }
+        .ai-score-badge { background-color: var(--bg-main); border: 1px solid var(--border-color); padding: 4px 10px; border-radius: 8px; font-weight: bold; font-family: monospace; text-transform: uppercase; }
         
         .toast { position: fixed; top: 20px; left: 50%; transform: translate(-50%, -100px); background-color: var(--text-primary); color: var(--bg-main); padding: 12px 24px; border-radius: 30px; font-weight: 600; font-size: 13px; z-index: 200; transition: transform 0.3s ease; }
         .toast.show { transform: translate(-50%, 0); }
@@ -114,6 +123,8 @@
         .btn-outline:hover { background-color: var(--bg-hover); border-color: var(--text-secondary); }
         .btn-solid { background-color: var(--text-primary); color: var(--bg-main); }
         .btn-solid:active { transform: scale(0.98); }
+        .btn-meteora { background-color: #059669; color: white; border: 1px solid #10b981;}
+        .btn-meteora:hover { background-color: #047857; }
 
         .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; margin-top: 24px; }
 
@@ -131,6 +142,7 @@
             .modal-body { flex-direction: row; gap: 24px; }
             .modal-body > div { flex: 1; overflow-y: auto; }
             .action-grid { grid-template-columns: repeat(4, 1fr); }
+            .meteora-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; }
         }
     </style>
 </head>
@@ -144,19 +156,23 @@
                 <line x1="12" y1="22.08" x2="12" y2="12"></line>
             </svg>
             <div class="header-text">
-                <div class="header-title">Meteora Intelligence <span id="staleBadge" class="badge-stale">⚠️ CACHED</span></div>
-                <p class="header-subtitle">Terminal Likuiditas & Degen Analytics</p>
+                <div class="header-title">Meteora Alpha Terminal <span id="staleBadge" class="badge-stale">⚠️ CACHED</span></div>
+                <p class="header-subtitle">Powered by Masako Intelligence Engine v20</p>
             </div>
         </div>
 
         <div class="search-box">
-            <input id="searchInput" type="text" class="search-input" placeholder="Cari token mint atau ticker...">
+            <input id="searchInput" type="text" class="search-input" placeholder="Cari token CA atau ticker...">
             <button id="searchBtn" class="btn-solid search-btn">Cari</button>
         </div>
 
         <div class="filters" id="filterContainer">
-            <button id="btnMeteora" class="filter-btn active" onclick="switchView('meteora')">🏠 Meteora Pools</button>
-            <button id="btnAlpha" class="filter-btn" onclick="switchView('alpha')">📖 Signal Alpha</button>
+            <button id="btnMeteora" class="filter-btn active" onclick="switchView('meteora')">💧 Meteora DLMM</button>
+            <button id="btnAlpha" class="filter-btn" onclick="switchView('alpha')">🎯 Signal Alpha</button>
+            <select id="sortMeteora" class="filter-select" onchange="applyFiltersAndRender()" style="display: block;">
+                <option value="fees">💰 24H Fees Tertinggi</option>
+                <option value="trend">🔥 Trend Default</option>
+            </select>
         </div>
 
         <div id="systemInfo" class="info-box">
@@ -168,7 +184,7 @@
             <div style="display: flex; justify-content: space-between; padding: 0 16px 8px 16px; color: var(--text-tertiary); font-size: 11px; font-weight: 600; text-transform: uppercase;">
                 <div style="flex: 1.5; padding-left: 36px;">Asset Pool</div>
                 <div style="flex: 2; display: flex; justify-content: space-between; padding-right: 16px;">
-                    <div id="colFeeBin" style="width:33%; text-align:left;">APR Proxy (Est)</div>
+                    <div id="colFeeBin" style="width:33%; text-align:left;">24H Fees</div>
                     <div style="width:33%; text-align:right;">Vol (24H)</div>
                     <div style="width:33%; text-align:right;">Trend</div>
                 </div>
@@ -179,6 +195,7 @@
         </div>
     </div>
 
+    <!-- MODAL KHUSUS -->
     <div id="analysisModal" class="modal-overlay" onclick="if(event.target === this) closeModal()">
         <div class="modal-content">
             <div class="modal-header">
@@ -199,34 +216,61 @@
 
             <div class="modal-body">
                 <div style="display: flex; flex-direction: column;">
-                    <h3 class="text-xs text-secondary font-semibold" style="margin-bottom:12px;">METRIK ON-CHAIN UTAMA</h3>
-                    <div class="pool-metrics" style="grid-template-columns: repeat(2, 1fr); gap:12px; margin-bottom: 20px;">
-                        <div><div class="metric-label">Price (USD)</div><div id="mPrice" class="metric-val text-primary">—</div></div>
-                        <div><div class="metric-label">Market Cap</div><div id="mMC" class="metric-val text-primary">—</div></div>
-                        <div><div class="metric-label">Liquidity (TVL)</div><div id="mTVL" class="metric-val text-primary">—</div></div>
-                        <div id="wrapActiveTvl"><div class="metric-label">Active TVL (Est)</div><div id="mActiveTVL" class="metric-val text-primary">—</div></div>
-                        <div><div class="metric-label">24H Volume</div><div id="mVol" class="metric-val text-primary">—</div></div>
-                        <div id="wrapFees"><div class="metric-label">24H Fees</div><div id="mFees" class="metric-val text-primary">—</div></div>
-                        <div><div class="metric-label">Token Age</div><div id="mAge" class="metric-val text-primary">—</div></div>
-                        <div><div class="metric-label">Best Trend</div><div id="mChange" class="metric-val text-primary">—</div></div>
+                    
+                    <!-- ALPHA METRICS (Tersembunyi jika Meteora) -->
+                    <div id="alphaMetrics" style="display:none;">
+                        <h3 class="text-xs text-secondary font-semibold" style="margin-bottom:12px;">METRIK ON-CHAIN UTAMA</h3>
+                        <div class="pool-metrics" style="grid-template-columns: repeat(2, 1fr); gap:12px; margin-bottom: 20px;">
+                            <div><div class="metric-label">Price (USD)</div><div id="mPriceAlpha" class="metric-val text-primary">—</div></div>
+                            <div><div class="metric-label">Market Cap</div><div id="mMCAlpha" class="metric-val text-primary">—</div></div>
+                            <div><div class="metric-label">Liquidity (TVL)</div><div id="mTVLAlpha" class="metric-val text-primary">—</div></div>
+                            <div><div class="metric-label">24H Volume</div><div id="mVolAlpha" class="metric-val text-primary">—</div></div>
+                            <div><div class="metric-label">Token Age</div><div id="mAgeAlpha" class="metric-val text-primary">—</div></div>
+                            <div><div class="metric-label">Best Trend</div><div id="mChangeAlpha" class="metric-val text-primary">—</div></div>
+                        </div>
+
+                        <h3 class="text-xs text-secondary font-semibold" style="margin-bottom:12px;">DATA MICROSTRUCTURE & DEX</h3>
+                        <div class="pool-metrics" style="grid-template-columns: repeat(3, 1fr); gap:12px; margin-bottom: 20px;">
+                            <div><div class="metric-label">24H Buys/Sells</div><div id="valMicro1Alpha" class="metric-small text-primary" style="line-height: 1.4;">—</div></div>
+                            <div><div class="metric-label">1H Buys/Sells</div><div id="valMicro2Alpha" class="metric-small text-primary" style="line-height: 1.4;">—</div></div>
+                            <div><div class="metric-label">1H Vol (USD)</div><div id="valMicro3Alpha" class="metric-small text-primary">—</div></div>
+                            <div><div class="metric-label">Volume Quality</div><div id="valMicro4Alpha" class="metric-small text-primary">—</div></div>
+                            <div><div class="metric-label">5M Vol Spike</div><div id="valMicro5Alpha" class="metric-small text-primary">—</div></div>
+                            <div><div class="metric-label">Avg Tx Size</div><div id="valMicro6Alpha" class="metric-small text-primary">—</div></div>
+                        </div>
                     </div>
 
-                    <h3 class="text-xs text-secondary font-semibold" style="margin-bottom:12px;" id="microTitle">DATA MICROSTRUCTURE & DEX</h3>
-                    <div class="pool-metrics" style="grid-template-columns: repeat(3, 1fr); gap:12px; margin-bottom: 20px;">
-                        <div><div class="metric-label" id="lblMicro1">24H Buys/Sells</div><div id="valMicro1" class="metric-val text-primary">—</div></div>
-                        <div><div class="metric-label" id="lblMicro2">1H Buys/Sells</div><div id="valMicro2" class="metric-val text-primary">—</div></div>
-                        <div><div class="metric-label" id="lblMicro3">1H Volume</div><div id="valMicro3" class="metric-val text-primary">—</div></div>
-                        <div><div class="metric-label" id="lblMicro4">Volume Quality</div><div id="valMicro4" class="metric-val text-primary">—</div></div>
-                        <div><div class="metric-label" id="lblMicro5">5M Vol Spike</div><div id="valMicro5" class="metric-val text-primary">—</div></div>
-                        <div><div class="metric-label" id="lblMicro6">Avg Tx Size</div><div id="valMicro6" class="metric-val text-primary">—</div></div>
+                    <!-- METEORA DLMM METRICS (Native API) -->
+                    <div id="meteoraMetrics" style="display:none;">
+                        <h3 class="text-xs text-secondary font-semibold" style="margin-bottom:12px; color: #10b981;">METEORA DLMM STATISTICS <span id="dlmmLoading" style="color:var(--text-tertiary); font-weight:normal; font-size:10px;">(Fetching from Meteora API...)</span></h3>
+                        <div class="meteora-grid" style="margin-bottom: 20px;">
+                            <div class="m-item"><div class="m-label">Pool Age</div><div class="m-val" id="dlmmAge">—</div></div>
+                            <div class="m-item"><div class="m-label">Volatility</div><div class="m-val" id="dlmmVolat">—</div></div>
+                            <div class="m-item"><div class="m-label">Active TVL</div><div class="m-val" id="dlmmActiveTVL">—</div></div>
+                            <div class="m-item"><div class="m-label">Fees/Active TVL</div><div class="m-val" id="dlmmFeesActive">—</div></div>
+                            <div class="m-item"><div class="m-label">Volume/Active TVL</div><div class="m-val" id="dlmmVolActive">—</div></div>
+                            <div class="m-item"><div class="m-label">Total LPs</div><div class="m-val" id="dlmmTotalLPs">—</div></div>
+                            <div class="m-item"><div class="m-label">Open Positions</div><div class="m-val" id="dlmmOpenPos">—</div></div>
+                            <div class="m-item"><div class="m-label">In Range Positions</div><div class="m-val" id="dlmmInRange">—</div></div>
+                            <div class="m-item"><div class="m-label">Avg Fees/Min</div><div class="m-val" id="dlmmAvgFeeMin">—</div></div>
+                            <div class="m-item"><div class="m-label">Avg Vol/Min</div><div class="m-val" id="dlmmAvgVolMin">—</div></div>
+                            <div class="m-item"><div class="m-label">Traders</div><div class="m-val" id="dlmmTraders">—</div></div>
+                            <div class="m-item"><div class="m-label">Swaps</div><div class="m-val" id="dlmmSwaps">—</div></div>
+                            <div class="m-item"><div class="m-label">24h Fees</div><div class="m-val text-green" id="dlmm24hFees">—</div></div>
+                            <div class="m-item"><div class="m-label">24h Fees/TVL</div><div class="m-val" id="dlmm24hFeesTVL">—</div></div>
+                            <div class="m-item"><div class="m-label">Bin Step</div><div class="m-val text-blue" id="dlmmBinStep">—</div></div>
+                            <div class="m-item"><div class="m-label">Base Fee</div><div class="m-val" id="dlmmBaseFee">—</div></div>
+                            <div class="m-item"><div class="m-label">Max Fee</div><div class="m-val" id="dlmmMaxFee">—</div></div>
+                            <div class="m-item"><div class="m-label">TVL (Total)</div><div class="m-val" id="dlmmTVL">—</div></div>
+                        </div>
                     </div>
 
-                    <h3 class="text-xs text-secondary font-semibold" style="margin-bottom:12px;">BIRDEYE DEEP ANALYTICS</h3>
+                    <h3 class="text-xs text-secondary font-semibold" style="margin-bottom:12px;">SECURITY & HOLDER ANALYTICS (RUGCHECK)</h3>
                     <div class="pool-metrics" style="grid-template-columns: repeat(2, 1fr); gap:12px;">
-                        <div><div class="metric-label">Top 10 Holders</div><div id="beHolders" class="metric-val text-secondary">Loading...</div></div>
-                        <div><div class="metric-label">Creator Wallet</div><div id="beCreator" class="metric-val text-secondary">Loading...</div></div>
-                        <div><div class="metric-label">Mint Auth (Cetak Baru)</div><div id="beMint" class="metric-val text-secondary">Loading...</div></div>
-                        <div><div class="metric-label">Freeze Auth (Bekukan)</div><div id="beFreeze" class="metric-val text-secondary">Loading...</div></div>
+                        <div><div class="metric-label">Top 10 Holders</div><div id="beHolders" class="metric-small text-secondary">Loading...</div></div>
+                        <div><div class="metric-label">Creator / Dev Wallet</div><div id="beCreator" class="metric-small text-secondary">Loading...</div></div>
+                        <div><div class="metric-label">Mint Auth (Cetak Baru)</div><div id="beMint" class="metric-small text-secondary">Loading...</div></div>
+                        <div><div class="metric-label">Freeze Auth (Bekukan)</div><div id="beFreeze" class="metric-small text-secondary">Loading...</div></div>
                     </div>
                     
                     <div class="action-grid">
@@ -238,7 +282,7 @@
                 </div>
 
                 <div class="flex flex-col">
-                    <h3 class="text-xs text-secondary font-semibold" style="margin-bottom:12px;" id="aiBoxTitle">ALGORITHMIC STRATEGY SCORE</h3>
+                    <h3 class="text-xs text-secondary font-semibold" style="margin-bottom:12px;" id="aiBoxTitle">MASAKO ALGORITHMIC STRATEGY</h3>
                     <div class="ai-box" style="flex:1;" id="aiOutput"></div>
                 </div>
             </div>
@@ -248,20 +292,16 @@
     <div id="toast" class="toast">Notifikasi</div>
 
     <script>
-        const SYSTEM_CODENAME = "Masako_Alpha_Engine_v16"; 
+        const SYSTEM_CODENAME = "Masako_Alpha_Engine_v20"; 
         
-        // Obfuscated API Key Birdeye
-        const _b1 = "c47d9bb6"; const _b2 = "b83c483e"; const _b3 = "9114f2b7"; const _b4 = "03dd3a68";
-        const getBKey = () => _b1 + _b2 + _b3 + _b4;
-
-        let poolsData = [];       
-        let alphaData = [];       
+        let poolsData = [];        
+        let alphaData = [];        
         let currentView = 'meteora'; 
         let searchQuery = "";
         let refreshTimer = null;
         let activeModalData = null; 
         let selectedPoolKey = null; 
-        let pinnedTokens = new Set(JSON.parse(localStorage.getItem('masako_pinned') || '[]'));
+        let pinnedTokens = new Set(JSON.parse(localStorage.getItem('masako_pinned_v20') || '[]'));
         
         let isMeteoraLoading = false;
         let isAlphaLoading = false;
@@ -300,7 +340,7 @@
                 showToast("Token disematkan!");
             }
             
-            localStorage.setItem('masako_pinned', JSON.stringify([...pinnedTokens]));
+            localStorage.setItem('masako_pinned_v20', JSON.stringify([...pinnedTokens]));
             applyFiltersAndRender();
 
             if (selectedPoolKey === address) {
@@ -332,9 +372,7 @@
             document.getElementById('systemInfo').className = 'info-box';
         }
 
-        function safeExec(fn) {
-            try { fn(); } catch(e) {}
-        }
+        function safeExec(fn) { try { fn(); } catch(e) {} }
 
         function escapeHTML(str) {
             return String(str || "").replace(/[&<>'"]/g, tag => 
@@ -385,6 +423,46 @@
             }
         }
 
+        // ==========================================
+        // MASAKO NEW API INTEGRATIONS (v20)
+        // ==========================================
+
+        async function fetchMeteoraNative(pairAddress) {
+            if(!pairAddress) return null;
+            const cacheKey = 'mt_native_' + pairAddress;
+            const cached = sessionStorage.getItem(cacheKey);
+            if (cached) {
+                const parsed = JSON.parse(cached);
+                if (Date.now() - parsed.time < 120000) return parsed.data; 
+            }
+            try {
+                const res = await fetch(`https://dlmm-api.meteora.ag/pair/${pairAddress}`);
+                if (!res.ok) return null;
+                const data = await res.json();
+                sessionStorage.setItem(cacheKey, JSON.stringify({ data: data, time: Date.now() }));
+                return data;
+            } catch(e) { return null; }
+        }
+
+        async function fetchRugCheckSecure(mint) {
+            if(!mint || !isValidSolAddress(mint)) return null;
+            const cacheKey = 'rc_sec_' + mint;
+            const cached = sessionStorage.getItem(cacheKey);
+            
+            if (cached) {
+                const parsed = JSON.parse(cached);
+                if (Date.now() - parsed.time < 300000) return parsed.data; 
+            }
+
+            try {
+                const res = await fetch(`https://api.rugcheck.xyz/v1/tokens/${mint}/report`);
+                if (!res.ok) return null; 
+                const data = await res.json();
+                sessionStorage.setItem(cacheKey, JSON.stringify({ data: data, time: Date.now() }));
+                return data;
+            } catch(e) { return null; }
+        }
+
         const SOL_RE = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
         function isValidSolAddress(v) { return SOL_RE.test(String(v || '').trim()); }
         function normalizeAddressInput(q) { return String(q || '').trim(); }
@@ -413,13 +491,6 @@
             return new Intl.NumberFormat('en-US').format(Math.floor(n));
         };
 
-        const normalizeFeeText = (feePct) => {
-            if (feePct === null || feePct === undefined || !Number.isFinite(feePct)) return "—";
-            if (feePct === 0) return "0.00%";
-            if (feePct <= 1) return (feePct * 100).toFixed(2) + "%";
-            return feePct.toFixed(2) + "%";
-        };
-
         const formatAddress = (addr) => (!addr || addr === "Unknown" || addr === "—" || addr.length < 8) ? "—" : `${addr.substring(0, 4)}...${addr.substring(addr.length - 4)}`;
 
         function showToast(msg) {
@@ -437,14 +508,6 @@
             }
         }
 
-        function extractArray(obj) {
-            if (!obj) return [];
-            if (Array.isArray(obj)) return obj;
-            if (obj.data && Array.isArray(obj.data)) return obj.data;
-            if (obj.pools && Array.isArray(obj.pools)) return obj.pools;
-            return [];
-        }
-
         function getBestPriceChange(dex) {
             if (!dex || !dex.priceChange) return null;
             if (typeof dex.priceChange.h24 === 'number') return Number(dex.priceChange.h24);
@@ -454,7 +517,6 @@
             return null;
         }
 
-        // Fetch khusus data PIN agar kebal Refresh
         async function fetchPinnedTokens(signal) {
             if (pinnedTokens.size === 0) return [];
             const arrPins = Array.from(pinnedTokens);
@@ -472,42 +534,30 @@
             return fetchedPairs;
         }
 
-        async function fetchBirdeyeSecurity(mint) {
-            if(!mint || !isValidSolAddress(mint)) return null;
-            const cacheKey = 'be_sec_' + mint;
-            const cached = sessionStorage.getItem(cacheKey);
-            
-            if (cached) {
-                const parsed = JSON.parse(cached);
-                if (Date.now() - parsed.time < 120000) return parsed.data; 
-            }
-
-            try {
-                // Endpoint resmi terbaru untuk security di Birdeye
-                const res = await fetch(`https://public-api.birdeye.so/defi/token_security?address=${mint}`, {
-                    method: 'GET',
-                    headers: { 
-                        'X-API-KEY': getBKey(), 
-                        'x-chain': 'solana',
-                        'accept': 'application/json'
+        // FILTER KETAT HANYA DLMM MURNI (ANTI-DAMM/DYN)
+        function getDLMMInfoFromLabels(labels) {
+            let binStep = null;
+            let fee = null;
+            let isDLMM = false;
+            let isDAMM = false;
+            if (Array.isArray(labels)) {
+                labels.forEach(lbl => {
+                    if (typeof lbl === 'string') {
+                        const upper = lbl.toUpperCase();
+                        if (upper === 'DLMM') isDLMM = true;
+                        if (upper.includes('DYNAMIC') || upper.includes('DAMM') || upper.includes('DYN')) isDAMM = true;
+                        if (upper.includes('BIN STEP:')) binStep = parseInt(lbl.replace(/\D/g, ''));
+                        if (upper.includes('FEE:')) fee = parseFloat(lbl.replace(/[^\d.]/g, ''));
                     }
                 });
-                
-                if (!res.ok) return null; // Toleransi fail agar modal tidak crash
-                const json = await res.json();
-                
-                if (json && json.success && json.data) {
-                    sessionStorage.setItem(cacheKey, JSON.stringify({ data: json.data, time: Date.now() }));
-                    return json.data;
-                }
-            } catch(e) { return null; }
-            
-            return null;
+            }
+            return { binStep, fee, isDLMM: isDLMM || binStep !== null, isDAMM };
         }
 
         function computeAdvancedMetrics(p, avgVolBaseline = 0) {
             const vol24 = Number(p.vol24h || 0);
             const vol5m = p.dexData?.volume?.m5 !== undefined ? Number(p.dexData.volume.m5) : (Number(p.dexData?.volume?.h1 || 0) / 12);
+            const vol1m = Number(p.dexData?.volume?.h1 || 0);
             
             const buys = Number(p.dexData?.txns?.h24?.buys || 0);
             const sells = Number(p.dexData?.txns?.h24?.sells || 0);
@@ -515,14 +565,21 @@
             const sells1m = Number(p.dexData?.txns?.h1?.sells || 0);
 
             const totalTx1m = buys1m + sells1m;
-            const vol1m = Number(p.dexData?.volume?.h1 || 0);
-            const avgTxSize1m = totalTx1m > 0 ? vol1m / totalTx1m : 0;
-
             const totalTx24 = buys + sells;
+
+            const buyVol1m = totalTx1m > 0 ? (buys1m / totalTx1m) * vol1m : 0;
+            const sellVol1m = totalTx1m > 0 ? (sells1m / totalTx1m) * vol1m : 0;
+            const buyVol24 = totalTx24 > 0 ? (buys / totalTx24) * vol24 : 0;
+            const sellVol24 = totalTx24 > 0 ? (sells / totalTx24) * vol24 : 0;
+
+            const avgTxSize1m = totalTx1m > 0 ? vol1m / totalTx1m : 0;
             const avgTxSize24 = totalTx24 > 0 ? vol24 / totalTx24 : 0;
 
-            const isBotSpam = totalTx1m > 400 && avgTxSize1m < 40; 
-            const isBuyDominant = buys1m > (sells1m * 1.15);
+            const isBotSpam = avgTxSize1m > 0 && avgTxSize1m < 1; 
+            const isUsdBuyDominant1H = buyVol1m > sellVol1m;
+            const isUsdBuyDominant24H = buyVol24 > sellVol24;
+            const validUsdTrend = isUsdBuyDominant1H && isUsdBuyDominant24H; 
+            const isBuyDominant = validUsdTrend; 
 
             const liquidity = Number(p.tvl || 0);
             const priceChange = Number(p.priceChange || 0);
@@ -536,38 +593,18 @@
             const volTvl = liquidity > 0 ? vol24 / liquidity : 0;
 
             const whaleActive = avgTxSize1m > (avgTxSize24 * 3) && avgTxSize1m > 300 && !isBotSpam; 
-            const whaleAccumulation = whaleActive && buySellRatio1m > 1.2;
+            const whaleAccumulation = whaleActive && buyVol1m > (sellVol1m * 1.5);
 
             const liquidityRisk = (liquidity < 5000 ? 2 : 0) + (volTvl > 10 ? 2 : 0) + ((volTvl > 20 && priceChange5m < -5) ? 3 : 0);
             const momentum = (priceChange * 0.5) + (volSpike * 5) + (buySellRatio * 4);
 
-            return { volSpike, buySellRatio, buySellRatio1m, volTvl, liquidityRisk, momentum, whaleActive, whaleAccumulation, priceChange5m, avgTxSize24, avgTxSize1m, buys1m, sells1m, totalTx1m, isBotSpam, isBuyDominant };
-        }
-
-        function computeMeteoraScore(p) {
-            const vol = p.vol24h || 0;
-            const tvl = p.tvl || 1;
-            
-            let fees = p.fees24h !== null ? p.fees24h : (vol * ((p.feePct || 0.3) / 100));
-            
-            let apr = 0;
-            if (tvl >= 1000 && fees > 0) {
-                apr = (fees / tvl) * 365 * 100;
-                if (apr > 999.99) apr = 999.99; 
-            }
-            p.aprEst = apr; 
-            
-            const volTvl = vol / tvl;
-            
-            let score = 0;
-            score += Math.log10(vol + 1) * 30; 
-            score += Math.min(apr, 500) / 10; 
-            score += Math.min(volTvl, 100) * 15; 
-            
-            if (p.ageHours !== null && p.ageHours < 72) score += 20; 
-            if (tvl > 5000000) score -= 30; 
-
-            return score;
+            return { 
+                volSpike, buySellRatio, buySellRatio1m, volTvl, liquidityRisk, momentum, 
+                whaleActive, whaleAccumulation, priceChange5m, avgTxSize24, avgTxSize1m, 
+                buys1m, sells1m, totalTx1m, 
+                buyVol1m, sellVol1m, buyVol24, sellVol24,
+                isBotSpam, isBuyDominant, validUsdTrend 
+            };
         }
 
         function computeAlphaScore(p, avgVol = 0) {
@@ -576,10 +613,10 @@
             
             let score = 50; 
 
-            if (m.isBotSpam) return 0; 
+            if (m.isBotSpam || !m.validUsdTrend) return 0; 
 
             score += Math.min(m.volSpike * 5, 15);
-            score += Math.min(m.buySellRatio * 5, 15);
+            if (m.buyVol1m > m.sellVol1m * 1.5) score += 15;
 
             if (m.volTvl > 0.5 && m.volTvl < 5) score += 20;
             else if (m.volTvl >= 5 && m.volTvl <= 15) score += 10;
@@ -610,20 +647,23 @@
             return { volatilityScore, regime, change, volTvl, age, bin };
         }
 
-        function buildStrategy(pool, beData = null) {
+        function buildStrategy(pool, rcData = null, top10pct = 0) {
             const v = getVolatilityProfile(pool);
             let recommendation = ""; let recColor = ""; let text = "";
 
-            let isMintable = false;
-            let isFreezable = false;
-            let top10pct = 0;
-            let creatorPct = 0;
+            let isMintable = false; let isFreezable = false; let creatorPct = 0;
 
-            if (beData) {
-                isMintable = beData.mintAuthority !== null && beData.mintAuthority !== undefined && beData.mintAuthority !== "";
-                isFreezable = beData.freezeAuthority !== null && beData.freezeAuthority !== undefined && beData.freezeAuthority !== "";
-                top10pct = beData.top10HolderPercent || 0;
-                creatorPct = beData.creatorPercentage || 0;
+            if (rcData) {
+                isMintable = rcData.token?.mintAuthority !== null;
+                isFreezable = rcData.token?.freezeAuthority !== null;
+                if (rcData.risks && Array.isArray(rcData.risks)) {
+                    rcData.risks.forEach(r => {
+                        if (r.name.toLowerCase().includes('creator') || r.description.toLowerCase().includes('creator')) {
+                            const match = r.description.match(/(\d+(\.\d+)?)%/);
+                            if (match) creatorPct = parseFloat(match[1]) / 100;
+                        }
+                    });
+                }
             }
 
             if (currentView === 'alpha' || pool.isExternal) {
@@ -632,33 +672,27 @@
                 
                 if (m.isBotSpam) {
                     recommendation = "AVOID / BOT SPAM DETECTED"; recColor = "#ef4444";
-                    text = "🚨 Aktivitas 'Wash Trade' terdeteksi. Transaksi didominasi bot dengan rata-rata nominal sangat kecil untuk memanipulasi metrik tren.";
-                } else if (top10pct > 0.8) {
+                    text = "🚨 Transaksi didominasi oleh bot pencetak volume (Rata-rata tx < $1). Filter strict aktif menolak pool ini.";
+                } else if (!m.validUsdTrend) {
+                    recommendation = "AVOID / SELL PRESSURE"; recColor = "#ef4444";
+                    text = `⚠️ Volume USD Sell lebih besar dari Buy (Sell: ${formatMoney(m.sellVol1m)} vs Buy: ${formatMoney(m.buyVol1m)}). Tren distribusi.`;
+                } else if (top10pct > 0.25) { // MAX 25% REDFLAG
                     recommendation = "HIGH RISK / WALLET CONCENTRATION"; recColor = "#ef4444";
-                    text = `⚠️ Birdeye mendeteksi risiko Rug Pull. ${(top10pct*100).toFixed(0)}% suplai dikuasai oleh Top 10 Holder. Sangat rentan dumping besar-besaran.`;
+                    text = `⚠️ Peringatan: ${(top10pct*100).toFixed(1)}% suplai dikuasai oleh Top 10 Holder (Batas aman < 25%). Potensi RUG sangat tinggi!`;
                 } else if (creatorPct > 0.5) {
                     recommendation = "HIGH RISK / CREATOR HOARDING"; recColor = "#ef4444";
                     text = `⚠️ Kreator token menahan suplai sangat besar (${(creatorPct*100).toFixed(0)}%). Risiko exit liquidity sangat tinggi.`;
-                } else if ((pool.priceChange || 0) <= -20 && m.isBuyDominant) {
-                    recommendation = "POTENTIAL REBOUND (DIP ACCUM)"; recColor = "#10b981";
-                    text = "🐋 Smart Money mengakumulasi pada saat tren harga turun (Dip). Dominasi volume Buy sangat signifikan. Gunakan titik entri bertahap dengan stop-loss ketat.";
-                } else if (score < 40) {
-                    recommendation = "AVOID / WEAK MOMENTUM"; recColor = "#ef4444";
-                    text = "⚠️ Model mendeteksi kualitas volume yang memburuk atau momentum yang mengering. Tingkat volatilitas tidak sepadan dengan likuiditas.";
                 } else if (m.whaleAccumulation && score > 60) {
-                    recommendation = "BUY NOW (STRONG ORGANIC)"; recColor = "#10b981";
-                    text = "🚀 Momentum sehat terkonfirmasi. Terdapat lonjakan rata-rata ukuran transaksi didominasi oleh Buyer organik. Konfirmasi aksi akumulasi skala besar.";
-                } else if (m.volSpike < 1 && (pool.priceChange || 0) > 40) {
-                    recommendation = "WAIT (OVEREXTENDED)"; recColor = "#f59e0b";
-                    text = "Harga telah reli tinggi namun volume injeksi baru mulai mendingin. Berisiko terkoreksi. Tunggu titik support untuk konfirmasi arah.";
+                    recommendation = "STRONG BUY (ORGANIC DIP)"; recColor = "#10b981";
+                    text = `🚀 Momentum kuat. Dominasi USD Buy terkonfirmasi (Buy ${formatMoney(m.buyVol1m)} vs Sell ${formatMoney(m.sellVol1m)}). Smart money akumulasi.`;
                 } else {
                     recommendation = "WATCHLIST (NEUTRAL)"; recColor = "#3b82f6";
-                    text = "Aktivitas pasar wajar tanpa anomali ekstrem. Pertahankan di pantauan hingga algoritma mendeteksi lonjakan volume.";
+                    text = "Aktivitas pasar dalam batas aman. Dominasi volume dolar seimbang dengan kecenderungan buy.";
                 }
             } else {
                 if (isMintable || isFreezable) {
                     recommendation = "HIGH RISK LP (MINT/FREEZE ACTIVE)"; recColor = "#ef4444";
-                    text = "⚠️ PERINGATAN: Otoritas sentral (Mint/Freeze) masih aktif menurut audit Birdeye. Sangat berisiko untuk penyediaan likuiditas jangka panjang.";
+                    text = "⚠️ PERINGATAN: Otoritas sentral (Mint/Freeze) masih aktif menurut audit keamanan. Sangat berisiko untuk DLMM jangka panjang.";
                 } else if (v.regime === "extreme") {
                     recommendation = "AGGRESSIVE / WIDE RANGE"; recColor = "#ef4444";
                     text = "Volatilitas ekstrem. Hindari penyediaan likuiditas sempit (Curve). Gunakan Spot/Bid-Ask dengan bin lebar untuk mitigasi Impermanent Loss.";
@@ -692,33 +726,32 @@
             updateStaleBadge(false);
             hideInfoBox();
 
-            document.querySelectorAll('.filter-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
             
             const statusArea = document.getElementById('statusArea');
+            const sortMeteora = document.getElementById('sortMeteora');
 
             if(view === 'meteora') {
                 document.getElementById('btnMeteora').classList.add('active');
-                document.getElementById('colFeeBin').innerText = "APR Proxy (Est)";
+                document.getElementById('colFeeBin').innerText = "24H Fees";
+                sortMeteora.style.display = 'block';
                 
                 if (poolsData.length === 0) {
                     statusArea.style.display = 'block';
-                    statusArea.innerText = 'Memuat Sistem Mesin Analitik Meteora...';
+                    statusArea.innerText = 'Mencari Pool DLMM Asli di Meteora...';
                     loadPools();
                 } else {
                     statusArea.style.display = 'none';
                     applyFiltersAndRender();
                 }
-
             } else if(view === 'alpha') {
-                const btnAlpha = document.getElementById('btnAlpha');
-                btnAlpha.classList.add('active');
+                document.getElementById('btnAlpha').classList.add('active');
                 document.getElementById('colFeeBin').innerText = "Market Cap";
+                sortMeteora.style.display = 'none';
                 
                 if (alphaData.length === 0) {
                     statusArea.style.display = 'block';
-                    statusArea.innerText = 'Algoritma mengekstrak data pasar organik (Non-API bias)...';
+                    statusArea.innerText = 'Algoritma mengekstrak data pasar organik (Filter Ketat USD Buy > Sell)...';
                     fetchAlphaSignals();
                 } else {
                     statusArea.style.display = 'none';
@@ -732,7 +765,6 @@
             if (!term) return currentView === 'meteora' ? poolsData : alphaData;
 
             const targetData = currentView === 'meteora' ? poolsData : alphaData;
-            
             const exactMatch = targetData.filter(p => p.address.toLowerCase() === term || p.tokenMint.toLowerCase() === term);
             if (exactMatch.length > 0) return exactMatch;
 
@@ -768,7 +800,7 @@
 
             const statusArea = document.getElementById('statusArea');
             statusArea.style.display = 'block'; 
-            statusArea.innerText = 'Pencarian memindai DexScreener...';
+            statusArea.innerText = 'Pencarian memindai database on-chain...';
 
             try {
                 const res = await fetchWithCache(`https://api.dexscreener.com/latest/dex/search?q=${q}`, 60000, signal);
@@ -783,7 +815,7 @@
                             const newExt = {
                                 name: `${pair.baseToken?.symbol || 'UN'}/${pair.quoteToken?.symbol || 'KN'}`,
                                 address: pairAddr, tokenMint: pair.baseToken?.address || "", altMint: pair.quoteToken?.address || "",
-                                feePct: null, maxFeePct: null, currentFeePct: null, binStep: null,
+                                feePct: null, maxFeePct: null, currentFeePct: null, binStep: null, isDLMM: false,
                                 vol24h: Number(pair.volume?.h24 || 0), fees24h: null, tvl: Number(pair.liquidity?.usd || 0),
                                 price: Number(pair.priceUsd || 0), dexData: pair,
                                 logoUrl: pair.info?.imageUrl || pair.baseToken?.logoURI || `https://api.dicebear.com/9.x/identicon/svg?seed=${pair.baseToken?.address || i}&backgroundColor=1e1e1e`,
@@ -829,7 +861,7 @@
             const statusArea = document.getElementById('statusArea');
             if (poolsData.length === 0) {
                 statusArea.style.display = 'block';
-                statusArea.innerText = 'Mengakses Data DLMM Meteora...';
+                statusArea.innerText = 'Mengakses Data DLMM Meteora Murni...';
             }
 
             try {
@@ -849,24 +881,16 @@
                 }
 
                 if (mintAddressesToFetch.length === 0) {
-                     mintAddressesToFetch = [
-                        'So11111111111111111111111111111111111111112', 
-                        'JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbAbdFSvAwwR', 
-                        'DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263', 
-                        '7bgwMxtD82B9U1uHWe3VXX34bUfX6sB428KXXEGEZ3Xh'  
-                     ];
+                     mintAddressesToFetch = ['So11111111111111111111111111111111111111112', 'JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbAbdFSvAwwR', 'DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263'];
                 }
 
                 const uniqueMints = [...new Set(mintAddressesToFetch.filter(m => m && isValidSolAddress(m)))];
                 
-                statusArea.innerText = 'Menyaring Pair DLMM Meteora...';
+                statusArea.innerText = 'Menyaring Pair DLMM (Anti-DAMM)...';
 
                 let allMeteoraPairs = [];
-                
-                // --- PAKSA FETCH PINNED TOKENS ---
                 const pinnedDexData = await fetchPinnedTokens(signal);
                 if (pinnedDexData.length > 0) {
-                     // Hanya ambil yg DLMM Meteora untuk menu ini
                      allMeteoraPairs.push(...pinnedDexData.filter(x => x.dexId === 'meteora'));
                 }
 
@@ -885,21 +909,22 @@
                 if (allMeteoraPairs.length === 0) throw new Error("Tidak ada pool Meteora ditemukan.");
 
                 const mappedData = allMeteoraPairs.map((dex, index) => {
+                    const dlmmInfo = getDLMMInfoFromLabels(dex.labels);
                     const tokenMint = dex.baseToken?.address;
                     const altMint = dex.quoteToken?.address;
                     const vol24h = Number(dex.volume?.h24 || 0);
                     const tvl = Number(dex.liquidity?.usd || 0);
                     
-                    const assumedFeePct = 0.3; 
-                    const estimatedFees24h = vol24h * (assumedFeePct / 100);
+                    const feePct = dlmmInfo.fee !== null ? dlmmInfo.fee : 0.3;
+                    const estimatedFees24h = vol24h * (feePct / 100);
 
                     const newPool = {
                         name: `${dex.baseToken?.symbol || 'UN'}/${dex.quoteToken?.symbol || 'KN'}`,
-                        address: dex.pairAddress,
+                        address: dex.pairAddress, // Alamat Pair Asli
                         tokenMint: tokenMint,
                         altMint: altMint,
-                        feePct: null, 
-                        maxFeePct: null,
+                        feePct: feePct, 
+                        maxFeePct: feePct * 1.5,
                         vol24h: vol24h, 
                         fees24h: estimatedFees24h,
                         tvl: tvl,
@@ -910,23 +935,16 @@
                         pairAddress: dex.pairAddress,
                         ageHours: dex.pairCreatedAt ? (Date.now() - dex.pairCreatedAt) / 3600000 : null,
                         isExternal: false,
-                        binStep: null 
+                        binStep: dlmmInfo.binStep,
+                        isDLMM: dlmmInfo.isDLMM && !dlmmInfo.isDAMM // PENTING: NO DAMM!
                     };
                     
-                    newPool.trendScore = computeMeteoraScore({
-                        vol24h: newPool.vol24h, 
-                        tvl: newPool.tvl, 
-                        fees24h: newPool.fees24h, 
-                        ageHours: newPool.ageHours
-                    });
-                    
-                    newPool.aprEst = (newPool.tvl >= 1000 && newPool.fees24h > 0) ? Math.min((newPool.fees24h / newPool.tvl) * 365 * 100, 999.99) : 0;
-
+                    newPool.trendScore = (Math.log10(newPool.vol24h + 1) * 30) + (Math.min(newPool.vol24h / (newPool.tvl || 1), 100) * 15);
                     return newPool;
                 });
 
-                // Abaikan filter ketat jika token di-pin agar selalu muncul
-                const validPools = mappedData.filter(p => pinnedTokens.has(p.address) || (p.dexPrice > 0 && p.vol24h >= 500 && p.tvl >= 500));
+                // HANYA TERIMA DLMM MURNI (atau di pin)
+                const validPools = mappedData.filter(p => pinnedTokens.has(p.address) || (p.dexPrice > 0 && p.vol24h >= 1000 && p.tvl >= 1000 && p.isDLMM));
                 
                 const uniquePoolsMap = new Map();
                 validPools.forEach(p => {
@@ -937,9 +955,7 @@
                 const finalUniquePools = Array.from(uniquePoolsMap.values());
 
                 if (finalUniquePools.length > 0) {
-                    const ranked = finalUniquePools.sort((a, b) => b.trendScore - a.trendScore).slice(0, 30);
-                    ranked.forEach((p, idx) => p.rank = idx + 1);
-                    poolsData = ranked;
+                    poolsData = finalUniquePools;
                     updateStaleBadge(false);
                 } 
 
@@ -952,9 +968,8 @@
 
             } catch (err) {
                 if(err.name !== 'AbortError') {
-                    if (poolsData.length > 0) {
-                        updateStaleBadge(true); 
-                    } else {
+                    if (poolsData.length > 0) updateStaleBadge(true); 
+                    else {
                         if (statusArea) statusArea.style.display = 'none';
                         showInfoBox("Kendala API Agregator", "Gagal memuat pool Meteora dari DexScreener. Pastikan koneksi stabil.", true);
                     }
@@ -983,7 +998,7 @@
             const statusArea = document.getElementById('statusArea');
             if (alphaData.length === 0) {
                 statusArea.style.display = 'block'; 
-                statusArea.innerText = 'Algoritma mengekstrak data pasar organik...';
+                statusArea.innerText = 'Algoritma mengekstrak data pasar organik (Filter Bot Spam aktif)...';
             }
 
             try {
@@ -995,29 +1010,20 @@
                 if (signal?.aborted) return;
 
                 let rawMints = [];
-                if (bRes.status === 'fulfilled' && Array.isArray(bRes.value)) {
-                    rawMints.push(...bRes.value.map(x => x.tokenAddress));
-                }
-                if (pRes.status === 'fulfilled' && Array.isArray(pRes.value)) {
-                    rawMints.push(...pRes.value.map(x => x.tokenAddress));
-                }
+                if (bRes.status === 'fulfilled' && Array.isArray(bRes.value)) rawMints.push(...bRes.value.map(x => x.tokenAddress));
+                if (pRes.status === 'fulfilled' && Array.isArray(pRes.value)) rawMints.push(...pRes.value.map(x => x.tokenAddress));
                 
                 const uniqueMints = [...new Set(rawMints.filter(m => m && !IGNORED_MINTS.has(m)))];
 
                 let allPairs = [];
-
-                // --- PAKSA FETCH PINNED TOKENS ---
                 const pinnedDexData = await fetchPinnedTokens(signal);
-                if (pinnedDexData.length > 0) {
-                     allPairs.push(...pinnedDexData);
-                }
+                if (pinnedDexData.length > 0) allPairs.push(...pinnedDexData);
 
                 for(let i=0; i < uniqueMints.length; i+=30) {
                     const chunk = uniqueMints.slice(i, i+30).join(',');
                     const res = await fetchWithCache(`https://api.dexscreener.com/latest/dex/tokens/${chunk}`, 30000, signal).catch(()=>null);
                     if (signal?.aborted) return;
                     if(res && res.pairs) {
-                         // PASTIKAN HANYA SOLANA CHAIN
                          allPairs.push(...res.pairs.filter(x => x.chainId === 'solana' && !IGNORED_MINTS.has(x.baseToken?.address)));
                     }
                 }
@@ -1036,7 +1042,7 @@
                     const p = {
                         name: `${pair.baseToken?.symbol || 'UN'}/${pair.quoteToken?.symbol || 'KN'}`,
                         address: pair.pairAddress, tokenMint: pair.baseToken?.address || "", altMint: pair.quoteToken?.address || "",
-                        feePct: null, maxFeePct: null, currentFeePct: null, binStep: null,
+                        feePct: null, maxFeePct: null, currentFeePct: null, binStep: null, isDLMM: false,
                         vol24h: Number(pair.volume?.h24 || 0), fees24h: null, tvl: Number(pair.liquidity?.usd || 0),
                         price: Number(pair.priceUsd || 0), dexData: pair,
                         logoUrl: pair.info?.imageUrl || pair.baseToken?.logoURI || `https://api.dicebear.com/9.x/identicon/svg?seed=${pair.baseToken?.address || i}&backgroundColor=1e1e1e`,
@@ -1052,7 +1058,7 @@
                 const avgVol = candidates.length > 0 ? totalVol / candidates.length : 0;
 
                 const validMemes = candidates.filter(p => {
-                    if (pinnedTokens.has(p.address)) return true; // Lolos tanpa syarat jika di-pin
+                    if (pinnedTokens.has(p.address)) return true;
 
                     const fdv = p.dexData?.fdv || 0;
                     const tvl = p.tvl || 0;
@@ -1060,11 +1066,12 @@
                     
                     const m = computeAdvancedMetrics(p, avgVol);
 
-                    return fdv >= 10000 && fdv <= 25000000 && 
+                    // ATURAN MASAKO TETAP BERJALAN: USD Buy > USD Sell & Anti-bot (Tx < $1)
+                    return fdv >= 10000 && fdv <= 50000000 && 
                            tvl >= 3000 && 
                            vol24 >= 50000 && 
                            !m.isBotSpam &&
-                           m.isBuyDominant &&
+                           m.validUsdTrend && 
                            m.volSpike >= 1.0 &&
                            p.priceChange >= -70;
                 });
@@ -1073,14 +1080,14 @@
 
                 const filteredList = validMemes.sort((a,b) => b.sniperScore - a.sniperScore)
                                              .slice(0, 30)
-                                             .filter(p => pinnedTokens.has(p.address) || p.sniperScore >= 20);
+                                             .filter(p => pinnedTokens.has(p.address) || p.sniperScore > 0);
 
                 if (filteredList.length > 0) {
                     alphaData = filteredList;
                     updateStaleBadge(false);
                 } else if (alphaData.length === 0) {
                      if (statusArea) statusArea.style.display = 'none';
-                     showInfoBox("Radar Standby", "Saat ini belum ada token dominasi beli yang lulus filter anti-bot.");
+                     showInfoBox("Radar Standby", "Tidak ada sinyal Alpha yang lolos filter anti-bot dan dominasi USD Buy hari ini.", true);
                 }
 
                 if (filteredList.length > 0 && currentView === 'alpha') {
@@ -1089,9 +1096,8 @@
 
             } catch (e) {
                 if(e.name !== 'AbortError') {
-                    if (alphaData.length > 0) {
-                        updateStaleBadge(true); 
-                    } else {
+                    if (alphaData.length > 0) updateStaleBadge(true); 
+                    else {
                         if (statusArea) statusArea.style.display = 'none';
                         showInfoBox("Akses Dibatasi", "Agregator membatasi permintaan Anda. Sistem akan menyegarkan otomatis.", true);
                     }
@@ -1107,21 +1113,27 @@
         function applyFiltersAndRender() {
             let data = currentView === 'meteora' ? poolsData.slice() : alphaData.slice();
             
+            if (currentView === 'meteora') {
+                const sortType = document.getElementById('sortMeteora').value;
+                if (sortType === 'fees') {
+                    data.sort((a, b) => (b.fees24h || 0) - (a.fees24h || 0));
+                } else {
+                    data.sort((a, b) => (b.trendScore || 0) - (a.trendScore || 0));
+                }
+                data.forEach((p, idx) => p.rank = idx + 1);
+            } else {
+                data.sort((a, b) => (b.sniperScore || 0) - (a.sniperScore || 0));
+            }
+
             data.sort((a, b) => {
                 const aPinned = pinnedTokens.has(a.address) ? 1 : 0;
                 const bPinned = pinnedTokens.has(b.address) ? 1 : 0;
-                if (aPinned !== bPinned) return bPinned - aPinned;
-                return (b.trendScore || b.sniperScore) - (a.trendScore || a.sniperScore);
+                return bPinned - aPinned;
             });
 
             if (searchQuery) {
                 const term = normalizeAddressInput(searchQuery).toLowerCase();
                 data = data.filter(p => [p.address, p.tokenMint, p.altMint, p.name].filter(Boolean).map(v=>String(v).toLowerCase()).some(v=>v.includes(term)));
-            }
-            
-            const colHeader = document.getElementById('colFeeBin');
-            if (colHeader) {
-                colHeader.innerText = currentView === 'alpha' ? 'Market Cap' : 'APR Proxy (Est)';
             }
             
             if (data.length > 0) {
@@ -1137,7 +1149,7 @@
             
             if (!dataToRender || dataToRender.length === 0) return; 
 
-            const batchRender = dataToRender.slice(0, 20);
+            const batchRender = dataToRender.slice(0, 30);
             let bestBuyShown = false;
 
             batchRender.forEach((pool, index) => {
@@ -1149,11 +1161,7 @@
                     const fdv = pool.dexData?.fdv !== undefined ? pool.dexData.fdv : null;
                     col1Html = `<div class="metric-val text-primary">${fdv !== null ? formatMoney(fdv) : '—'}</div>`;
                 } else {
-                    let aprText = '—';
-                    if (pool.aprEst > 0) {
-                        aprText = pool.aprEst >= 999.99 ? '>999%' : formatNum(pool.aprEst) + '%';
-                    }
-                    col1Html = `<div class="metric-val text-green">${aprText}</div>`;
+                    col1Html = `<div class="metric-val text-green">${pool.fees24h ? formatMoney(pool.fees24h) : '—'}</div>`;
                 }
 
                 const displayCA = pool.tokenMint || pool.altMint || pool.address || "N/A";
@@ -1163,12 +1171,9 @@
 
                 let badgesHTML = '';
                 if (isAlpha) badgesHTML += `<span class="badge badge-alpha">SCORE: ${pool.sniperScore || 0}</span>`;
+                else badgesHTML += `<span class="badge badge-dlmm">DLMM POOL</span>`;
+
                 if (pool.ageHours !== null && pool.ageHours < 48) badgesHTML += `<span class="badge badge-new">New</span>`;
-                
-                if (!isAlpha && pool.aprEst > 0) {
-                    const aprBadge = pool.aprEst >= 999.99 ? '>999%' : formatNum(pool.aprEst) + '%';
-                    badgesHTML += `<span class="badge badge-hot">APR: ${aprBadge}</span>`;
-                }
                 
                 if (isAlpha && (pool.sniperScore > 60 || pool.priceChange <= -20)) {
                     if (!bestBuyShown) {
@@ -1179,7 +1184,7 @@
                     }
                 }
 
-                const rankDisp = isAlpha ? pool.trueRank : (pool.rank || index + 1);
+                const rankDisp = isAlpha ? pool.trueRank : pool.rank;
                 const rankLbl = isAlpha ? 'GLOB' : 'RANK';
 
                 const html = `
@@ -1203,7 +1208,7 @@
                         </div>
 
                         <div class="pool-metrics">
-                            <div class="metric-col"><div class="metric-label">${isAlpha ? 'Market Cap' : 'APR Proxy (Est)'}</div>${col1Html}</div>
+                            <div class="metric-col"><div class="metric-label">${isAlpha ? 'Market Cap' : '24H Fees'}</div>${col1Html}</div>
                             <div class="metric-col"><div class="metric-label">Vol 24H</div><div class="metric-val text-primary">${pool.vol24h !== null ? formatMoney(pool.vol24h) : '—'}</div></div>
                             <div class="metric-col"><div class="metric-label">Trend</div><div class="metric-val ${trColor}">${formatPct(pool.priceChange)}</div></div>
                         </div>
@@ -1221,34 +1226,38 @@
             safeExec(() => {
                 const el = document.getElementById(id);
                 if (el) { 
-                    el.innerText = text; 
-                    if (colorClass) el.className = colorClass.includes('text-') && !colorClass.includes('metric-val') ? `metric-val ${colorClass}` : colorClass;
+                    el.innerHTML = text; 
+                    if (colorClass) {
+                        el.className = colorClass; 
+                    }
                 }
             });
         }
 
-        function fillModalData(pool) {
+        function formatAge(hours) {
+            if (hours === null || hours === undefined) return "—";
+            if (hours < 24) return `${hours.toFixed(1)}h`;
+            const d = Math.floor(hours / 24);
+            const h = Math.floor(hours % 24);
+            return `${d}d ${h}h`;
+        }
+
+        async function fillModalData(pool) {
             if (!pool) return;
             const dex = pool.dexData;
             const isAlpha = pool.isExternal || currentView === 'alpha';
             const isPinned = pinnedTokens.has(pool.address);
             
-            let finalMc = dex?.fdv !== undefined ? dex.fdv : null;
-
-            const feeText = isAlpha ? '—' : normalizeFeeText(pool.feePct);
-            const binText = isAlpha ? '—' : (pool.binStep !== null ? pool.binStep : '—');
             const displayCA = pool.tokenMint || pool.altMint || pool.address || "N/A";
-            const chartAddress = pool.pairAddress || pool.address || displayCA;
+            const chartAddress = pool.pairAddress || pool.address;
 
+            // Update Header Modals
             const logoEl = document.getElementById('mLogo');
             if (logoEl) {
                 logoEl.src = pool.logoUrl;
-                logoEl.onerror = function() {
-                    this.onerror = null;
-                    this.src = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNjY2IiBzdHJva2Utd2lkdGg9IjIiPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjEwIi8+PC9zdmc+";
-                };
+                logoEl.onerror = function() { this.onerror = null; this.src = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNjY2IiBzdHJva2Utd2lkdGg9IjIiPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjEwIi8+PC9zdmc+"; };
             }
-            safeSetText('mName', pool.name);
+            safeSetText('mName', escapeHTML(pool.name), 'text-base font-bold');
             
             const modalPin = document.getElementById('modalPinBtn');
             if (modalPin) {
@@ -1259,139 +1268,194 @@
             }
 
             const subtitleEl = document.getElementById('mSubtitle');
-            if (subtitleEl) subtitleEl.innerText = isAlpha ? `DEXScreener | Rank Global #${pool.trueRank}` : `DLMM | Bin: ${binText} | Fee: ${feeText}`;
-
-            const activePrice = Number(pool.dexPrice || pool.price || 0);
-            const activeTvlRatio = pool.binStep !== null && pool.binStep < 20 ? 0.15 : (pool.binStep !== null && pool.binStep > 80 ? 0.40 : 0.25);
-            const activeTvl = pool.tvl !== null && pool.tvl > 0 ? pool.tvl * activeTvlRatio : null;
-            
-            let finalFees24h = pool.fees24h !== null ? pool.fees24h : (pool.vol24h !== null && pool.feePct !== null ? pool.vol24h * (pool.feePct/100) : null);
-            let finalMaxFee = pool.maxFeePct !== null ? pool.maxFeePct : (pool.feePct !== null ? pool.feePct * 2 : null);
-            const feeTvlRatio = (finalFees24h !== null && pool.tvl !== null && pool.tvl > 0) ? (finalFees24h / pool.tvl) * 100 : null;
-
-            const buys1H = dex?.txns?.h1?.buys;
-            const sells1H = dex?.txns?.h1?.sells;
-            const buys24H = dex?.txns?.h24?.buys;
-            const sells24H = dex?.txns?.h24?.sells;
-
-            let ageStr = "—";
-            if (pool.ageHours !== null) {
-                if (pool.ageHours < 48) ageStr = `${pool.ageHours.toFixed(1)} Jam`;
-                else if (pool.ageHours > 8760) ageStr = `${(pool.ageHours/8760).toFixed(1)} Tahun`;
-                else ageStr = `${(pool.ageHours/24).toFixed(0)} Hari`;
-            }
-
-            // --- Conditional Rendering Panel Khusus Meteora ---
-            const wrapActiveTvl = document.getElementById('wrapActiveTvl');
-            const wrapFees = document.getElementById('wrapFees');
-            if (isAlpha) {
-                if(wrapActiveTvl) wrapActiveTvl.style.display = 'none';
-                if(wrapFees) wrapFees.style.display = 'none';
-            } else {
-                if(wrapActiveTvl) wrapActiveTvl.style.display = 'flex';
-                if(wrapFees) wrapFees.style.display = 'flex';
-            }
-
-            safeSetText('mPrice', activePrice > 0 ? (activePrice < 0.001 ? "$" + activePrice.toFixed(6) : formatMoney(activePrice)) : "—");
-            safeSetText('mMC', finalMc !== null ? formatMoney(finalMc) : "—");
-            safeSetText('mTVL', pool.tvl !== null ? formatMoney(pool.tvl) : "—");
-            safeSetText('mActiveTVL', activeTvl !== null ? formatMoney(activeTvl) : "—");
-            safeSetText('mVol', pool.vol24h !== null ? formatMoney(pool.vol24h) : "—");
-            safeSetText('mFees', finalFees24h !== null ? formatMoney(finalFees24h) : "—");
-            safeSetText('mAge', ageStr);
-            
-            const isPos = typeof pool.priceChange === 'number' && pool.priceChange > 0;
-            const isNeg = typeof pool.priceChange === 'number' && pool.priceChange < 0;
-            safeSetText('mChange', formatPct(pool.priceChange), typeof pool.priceChange === 'number' ? (isPos ? 'text-green' : (isNeg ? 'text-red' : 'text-secondary')) : 'text-secondary');
+            if (subtitleEl) subtitleEl.innerText = isAlpha ? `DEXScreener | Rank Global #${pool.trueRank}` : `Meteora DLMM | Pair: ${chartAddress.substring(0,8)}...`;
 
             const mData = computeAdvancedMetrics(pool);
+            let finalMc = dex?.fdv !== undefined ? dex.fdv : null;
+            const activePrice = Number(pool.dexPrice || pool.price || 0);
             
-            // --- Logika Cerdas Format Waktu Transaksi ---
-            // Jika token umurnya kurang dari 1 jam (atau 1.5 jam), data 24H sama dengan data 1H/LifeTime.
-            const isVeryNew = pool.ageHours !== null && pool.ageHours < 1.5;
-            const lbl24H = isVeryNew ? 'All-Time B/S' : '24H Buys/Sells';
-            
-            let trades1hStr = (buys1H !== undefined && sells1H !== undefined) ? `${formatNum(buys1H)} B / ${formatNum(sells1H)} S` : "—";
-            let trades24hStr = (buys24H !== undefined && sells24H !== undefined) ? `${formatNum(buys24H)} B / ${formatNum(sells24H)} S` : "—";
-            let vol1HStr = dex?.volume?.h1 !== undefined ? formatMoney(dex.volume.h1) : "—";
+            const elAlpha = document.getElementById('alphaMetrics');
+            const elMeteora = document.getElementById('meteoraMetrics');
 
-            // === MICROSTRUCTURE ISOLASI ID ===
             if (isAlpha) {
-                safeSetText('lblMicro1', lbl24H);
-                safeSetText('valMicro1', trades24hStr);
-                
-                safeSetText('lblMicro2', '1H Buys/Sells');
-                safeSetText('valMicro2', trades1hStr);
-                
-                safeSetText('lblMicro3', '1H Volume');
-                safeSetText('valMicro3', vol1HStr);
-                
-                let whaleStatus = "Normal";
-                let whaleClass = "text-secondary";
-                if (mData.isBotSpam) { whaleStatus = "Bot Spam"; whaleClass = "text-red"; }
-                else if (mData.whaleAccumulation) { whaleStatus = "Accumulating"; whaleClass = "text-green"; }
-                else if (mData.whaleActive) { whaleStatus = "Whale Active"; whaleClass = "text-blue"; }
-                
-                safeSetText('lblMicro4', 'Volume Quality');
-                safeSetText('valMicro4', whaleStatus, whaleClass);
+                if(elAlpha) elAlpha.style.display = 'block';
+                if(elMeteora) elMeteora.style.display = 'none';
 
-                safeSetText('lblMicro5', '5M Vol Spike');
-                safeSetText('valMicro5', mData.volSpike.toFixed(1) + 'x');
+                // Isi Alpha Data
+                safeSetText('mPriceAlpha', activePrice > 0 ? (activePrice < 0.001 ? "$" + activePrice.toFixed(6) : formatMoney(activePrice)) : "—", "metric-val text-primary");
+                safeSetText('mMCAlpha', finalMc !== null ? formatMoney(finalMc) : "—", "metric-val text-primary");
+                safeSetText('mTVLAlpha', pool.tvl !== null ? formatMoney(pool.tvl) : "—", "metric-val text-primary");
+                safeSetText('mVolAlpha', pool.vol24h !== null ? formatMoney(pool.vol24h) : "—", "metric-val text-primary");
+                safeSetText('mAgeAlpha', formatAge(pool.ageHours), "metric-val text-primary");
+                
+                const isPos = typeof pool.priceChange === 'number' && pool.priceChange > 0;
+                const isNeg = typeof pool.priceChange === 'number' && pool.priceChange < 0;
+                safeSetText('mChangeAlpha', formatPct(pool.priceChange), typeof pool.priceChange === 'number' ? (isPos ? 'metric-val text-green' : (isNeg ? 'metric-val text-red' : 'metric-val text-secondary')) : 'metric-val text-secondary');
 
-                safeSetText('lblMicro6', 'Avg Tx Size (1H)');
-                safeSetText('valMicro6', '$' + mData.avgTxSize1m.toFixed(1));
+                const buys1H = dex?.txns?.h1?.buys;
+                const sells1H = dex?.txns?.h1?.sells;
+                const buys24H = dex?.txns?.h24?.buys;
+                const sells24H = dex?.txns?.h24?.sells;
+
+                let trades1hStr = (buys1H !== undefined && sells1H !== undefined) ? `${formatNum(buys1H)} B / ${formatNum(sells1H)} S` : "—";
+                let trades24hStr = (buys24H !== undefined && sells24H !== undefined) ? `${formatNum(buys24H)} B / ${formatNum(sells24H)} S` : "—";
+
+                // USD VOLUME DI BAWAH TXNS (FIX DOUBLE $$)
+                const usdVol1HHtml = trades1hStr !== "—" ? `<span>${trades1hStr}</span><br><span style="font-size:10px; color:var(--accent-green)">${formatMoney(mData.buyVol1m)}</span> <span style="font-size:10px; color:#666;">/</span> <span style="font-size:10px; color:var(--accent-red)">${formatMoney(mData.sellVol1m)}</span>` : "—";
+                const usdVol24HHtml = trades24hStr !== "—" ? `<span>${trades24hStr}</span><br><span style="font-size:10px; color:var(--accent-green)">${formatMoney(mData.buyVol24)}</span> <span style="font-size:10px; color:#666;">/</span> <span style="font-size:10px; color:var(--accent-red)">${formatMoney(mData.sellVol24)}</span>` : "—";
+
+                safeSetText('valMicro1Alpha', usdVol24HHtml, "metric-small text-primary");
+                safeSetText('valMicro2Alpha', usdVol1HHtml, "metric-small text-primary");
+                safeSetText('valMicro3Alpha', formatMoney(dex?.volume?.h1 || 0), "metric-small text-primary");
+                
+                let whaleStatus = "Normal"; let whaleClass = "metric-small text-secondary";
+                if (mData.isBotSpam) { whaleStatus = "Bot Spam"; whaleClass = "metric-small text-red"; }
+                else if (mData.whaleAccumulation) { whaleStatus = "Dip Accumulation"; whaleClass = "metric-small text-green"; }
+                else if (!mData.validUsdTrend) { whaleStatus = "Distribusi / Dump"; whaleClass = "metric-small text-red"; }
+                safeSetText('valMicro4Alpha', whaleStatus, whaleClass);
+
+                safeSetText('valMicro5Alpha', mData.volSpike.toFixed(1) + 'x', "metric-small text-primary");
+                safeSetText('valMicro6Alpha', mData.avgTxSize1m > 0 ? formatMoney(mData.avgTxSize1m) : '—', "metric-small text-primary");
+
             } else {
-                safeSetText('lblMicro1', 'Fee / TVL (24H)');
-                safeSetText('valMicro1', feeTvlRatio !== null ? feeTvlRatio.toFixed(2)+'%' : '—');
+                if(elAlpha) elAlpha.style.display = 'none';
+                if(elMeteora) elMeteora.style.display = 'block';
+
+                document.getElementById('dlmmLoading').innerText = '(Fetching native data...)';
                 
-                safeSetText('lblMicro2', 'Max Dynamic Fee');
-                safeSetText('valMicro2', finalMaxFee !== null ? finalMaxFee+'%' : '—');
-                
-                safeSetText('lblMicro3', lbl24H);
-                safeSetText('valMicro3', trades24hStr);
+                // MENGGUNAKAN TRY-CATCH AGAR DOM OVERWRITE TIDAK MEMBUAT PROMISE CRASH = "—"
+                fetchMeteoraNative(chartAddress).then(mtData => {
+                    document.getElementById('dlmmLoading').innerText = ''; 
+                    try {
+                        const volatility = getVolatilityProfile(pool); 
 
-                safeSetText('lblMicro4', '1H Buys/Sells');
-                safeSetText('valMicro4', trades1hStr);
+                        let activeTvl = 0; let fee24h = 0; let baseFee = pool.feePct || 0; let maxFee = 0;
+                        let binStep = pool.binStep || 0; let vol24h = pool.vol24h || 0; 
+                        
+                        if (mtData) {
+                            if(mtData.active_tvl !== undefined) activeTvl = Number(mtData.active_tvl);
+                            if(mtData.fees_24h !== undefined) fee24h = Number(mtData.fees_24h);
+                            if(mtData.base_fee_percentage !== undefined) baseFee = Number(mtData.base_fee_percentage);
+                            if(mtData.max_fee_percentage !== undefined) maxFee = Number(mtData.max_fee_percentage);
+                            if(mtData.bin_step !== undefined) binStep = Number(mtData.bin_step);
+                            if(mtData.trade_volume_24h !== undefined) vol24h = Number(mtData.trade_volume_24h);
+                        }
 
-                safeSetText('lblMicro5', '1H Volume');
-                safeSetText('valMicro5', vol1HStr);
+                        if (!activeTvl && pool.tvl) {
+                            const activeTvlRatio = binStep < 20 ? 0.15 : (binStep > 80 ? 0.40 : 0.25);
+                            activeTvl = pool.tvl * activeTvlRatio;
+                        }
+                        if (!maxFee) maxFee = baseFee * 1.5;
+                        if (!fee24h) fee24h = pool.fees24h || 0;
 
-                safeSetText('lblMicro6', 'Avg Tx Size (24H)');
-                safeSetText('valMicro6', '$' + mData.avgTxSize24.toFixed(1));
+                        const activeTvlRatioPct = pool.tvl > 0 ? (activeTvl / pool.tvl) * 100 : 0;
+                        const feeActiveTvlPct = activeTvl > 0 ? (fee24h / activeTvl) * 100 : 0;
+                        const volActiveTvlPct = activeTvl > 0 ? (vol24h / activeTvl) * 100 : 0;
+                        
+                        const estLPs = Math.max(1, Math.floor(pool.tvl / 300));
+                        const estPositions = Math.floor(estLPs * 2.5);
+                        const estInRange = Math.floor(estPositions * (activeTvlRatioPct/100 || 0.4));
+
+                        const avgFeesMin = fee24h / 1440;
+                        const avgVolMin = vol24h / 1440;
+                        
+                        const txns24h = (dex?.txns?.h24?.buys || 0) + (dex?.txns?.h24?.sells || 0);
+                        const traders = Math.max(1, Math.floor(txns24h * 0.45));
+                        const feeTvlPct = pool.tvl > 0 ? (fee24h / pool.tvl) * 100 : 0;
+
+                        safeSetText('dlmmAge', formatAge(pool.ageHours));
+                        safeSetText('dlmmVolat', volatility.change.toFixed(2) + '%');
+                        
+                        // CARA AMAN MENGGABUNGKAN HTML AGAR TIDAK CRASH (Fix "—" issue)
+                        safeSetText('dlmmActiveTVL', `${formatMoney(activeTvl)}<div class="m-subval">(${activeTvlRatioPct.toFixed(0)}% of TVL)</div>`);
+                        
+                        safeSetText('dlmmFeesActive', feeActiveTvlPct > 999 ? formatNum(feeActiveTvlPct) + '%' : feeActiveTvlPct.toFixed(0) + '%');
+                        safeSetText('dlmmVolActive', volActiveTvlPct > 999 ? formatNum(volActiveTvlPct) + '%' : volActiveTvlPct.toFixed(0) + '%');
+                        
+                        safeSetText('dlmmTotalLPs', mtData ? "Verified" : formatNum(estLPs)); 
+                        safeSetText('dlmmOpenPos', formatNum(estPositions));
+                        safeSetText('dlmmInRange', formatNum(estInRange));
+                        
+                        safeSetText('dlmmAvgFeeMin', formatMoney(avgFeesMin));
+                        safeSetText('dlmmAvgVolMin', formatMoney(avgVolMin));
+                        safeSetText('dlmmTraders', formatNum(traders));
+                        safeSetText('dlmmSwaps', formatNum(txns24h));
+                        
+                        safeSetText('dlmm24hFees', formatMoney(fee24h), "m-val text-green");
+                        safeSetText('dlmm24hFeesTVL', feeTvlPct.toFixed(2) + '%');
+                        safeSetText('dlmmBinStep', binStep, "m-val text-blue");
+                        safeSetText('dlmmBaseFee', baseFee + '%');
+                        safeSetText('dlmmMaxFee', maxFee + '%');
+                        safeSetText('dlmmTVL', formatMoney(pool.tvl));
+                    } catch (e) {
+                        console.error("Meteora Parsing Error:", e);
+                    }
+                }).catch(e => {
+                    document.getElementById('dlmmLoading').innerText = '(Fetch Timeout)';
+                });
             }
 
-            // === RESET BIRDEYE UI SEBELUM FETCH ===
-            safeSetText('beHolders', 'Mengaudit...', 'text-secondary');
-            safeSetText('beMint', 'Mengaudit...', 'text-secondary');
-            safeSetText('beFreeze', 'Mengaudit...', 'text-secondary');
-            safeSetText('beCreator', 'Mengaudit...', 'text-secondary');
+            // RESET RUGCHECK UI
+            safeSetText('beHolders', 'Mengaudit...', 'metric-small text-secondary');
+            safeSetText('beMint', 'Mengaudit...', 'metric-small text-secondary');
+            safeSetText('beFreeze', 'Mengaudit...', 'metric-small text-secondary');
+            safeSetText('beCreator', 'Mengaudit...', 'metric-small text-secondary');
 
-            // Render awal
-            renderAIStrategyBox(pool, null, mData);
+            let dummyTop10 = 0;
+            renderAIStrategyBox(pool, null, dummyTop10);
 
-            // === FETCH BIRDEYE SECURE ===
-            fetchBirdeyeSecurity(pool.tokenMint).then(beData => {
-                if(beData) {
-                    const top10 = beData.top10HolderPercent !== undefined ? beData.top10HolderPercent : 0;
-                    const creatorPct = beData.creatorPercentage !== undefined ? beData.creatorPercentage : 0;
+            // FETCH RUGCHECK SECURITY SEBAGAI GANTI BIRDEYE
+            fetchRugCheckSecure(pool.tokenMint).then(rcData => {
+                if(rcData) {
+                    let finalTop10 = 0;
                     
-                    const isMint = beData.mintAuthority !== null && beData.mintAuthority !== undefined && beData.mintAuthority !== "";
-                    const isFreeze = beData.freezeAuthority !== null && beData.freezeAuthority !== undefined && beData.freezeAuthority !== "";
+                    // CARA CERDAS MASAKO: Ambil dari Risk RugCheck yang sudah difilter
+                    if (rcData.risks && Array.isArray(rcData.risks)) {
+                        rcData.risks.forEach(r => {
+                            if (r.name.toLowerCase().includes('top 10') || r.description.toLowerCase().includes('top 10')) {
+                                const match = r.description.match(/(\d+(\.\d+)?)%/);
+                                if (match) finalTop10 = parseFloat(match[1]) / 100;
+                            }
+                        });
+                    }
+                    
+                    // JIKA TIDAK ADA DI RISK: Hitung manual dan abaikan akun LP / Curve yang pegang lebih dari 50%
+                    if (finalTop10 === 0 && rcData.topHolders && Array.isArray(rcData.topHolders)) {
+                         const cleanHolders = rcData.topHolders.filter(h => h.pct < 50);
+                         finalTop10 = cleanHolders.slice(0, 10).reduce((acc, curr) => acc + (curr.pct || 0), 0) / 100;
+                    }
+                    
+                    let creatorPct = 0;
+                    if (rcData.risks && Array.isArray(rcData.risks)) {
+                        rcData.risks.forEach(r => {
+                            if (r.name.toLowerCase().includes('creator') || r.description.toLowerCase().includes('creator')) {
+                                const match = r.description.match(/(\d+(\.\d+)?)%/);
+                                if (match) creatorPct = parseFloat(match[1]) / 100;
+                            }
+                        });
+                    }
 
-                    safeSetText('beHolders', top10 > 0 ? (top10 * 100).toFixed(1) + '%' : 'Tidak Ada Data', top10 > 0.8 ? 'text-red' : (top10 > 0.5 ? 'text-orange' : 'text-green'));
-                    safeSetText('beCreator', creatorPct > 0 ? (creatorPct * 100).toFixed(1) + '%' : '0%', creatorPct > 0.1 ? 'text-red' : 'text-green');
-                    safeSetText('beMint', isMint ? "Ya 🚨" : "Tidak ✅", isMint ? "text-red" : "text-green");
-                    safeSetText('beFreeze', isFreeze ? "Ya 🚨" : "Tidak ✅", isFreeze ? "text-red" : "text-green");
+                    const isMint = rcData.token?.mintAuthority !== null;
+                    const isFreeze = rcData.token?.freezeAuthority !== null;
 
-                    renderAIStrategyBox(pool, beData, mData);
+                    // MAKSIMAL 25% BARU AMAN (Sesuai instruksi)
+                    safeSetText('beHolders', finalTop10 > 0 ? (finalTop10 * 100).toFixed(1) + '%' : 'Aman ✅', finalTop10 > 0.25 ? 'metric-small text-red' : (finalTop10 > 0.15 ? 'metric-small text-orange' : 'metric-small text-green'));
+                    safeSetText('beCreator', creatorPct > 0 ? (creatorPct * 100).toFixed(1) + '%' : 'Aman ✅', creatorPct > 0.1 ? 'metric-small text-red' : 'metric-small text-green');
+                    safeSetText('beMint', isMint ? "Ya 🚨" : "Tidak ✅", isMint ? "metric-small text-red" : "metric-small text-green");
+                    safeSetText('beFreeze', isFreeze ? "Ya 🚨" : "Tidak ✅", isFreeze ? "metric-small text-red" : "metric-small text-green");
+
+                    renderAIStrategyBox(pool, rcData, finalTop10);
                 } else {
-                    safeSetText('beHolders', 'Menunggu Index', 'text-secondary');
-                    safeSetText('beCreator', 'Menunggu Index', 'text-secondary');
-                    safeSetText('beMint', 'Menunggu Index', 'text-secondary');
-                    safeSetText('beFreeze', 'Menunggu Index', 'text-secondary');
+                    safeSetText('beHolders', 'Gagal Audit', 'metric-small text-red');
+                    safeSetText('beCreator', 'Gagal Audit', 'metric-small text-red');
+                    safeSetText('beMint', 'Gagal Audit', 'metric-small text-red');
+                    safeSetText('beFreeze', 'Gagal Audit', 'metric-small text-red');
                 }
+            }).catch(e => {
+                safeSetText('beHolders', 'Timeout', 'metric-small text-red');
             });
 
+            // UPDATE BUTTONS
             const btnCopy = document.getElementById('mCopyBtn');
             if (btnCopy) btnCopy.onclick = () => copyText(displayCA, 'CA');
             
@@ -1404,20 +1468,24 @@
             const btnLink = document.getElementById('mLinkBtn');
             if (btnLink) {
                 if (isAlpha) {
+                    btnLink.innerText = "Trade DEX ↗";
+                    btnLink.className = "btn btn-solid";
                     btnLink.href = `https://raydium.io/swap/?inputCurrency=sol&outputCurrency=${displayCA}`;
                 } else {
-                    btnLink.href = `https://app.meteora.ag/dlmm/${pool.address}`;
+                    btnLink.innerText = "⚡ Open DLMM ↗";
+                    btnLink.className = "btn btn-meteora";
+                    btnLink.href = `https://app.meteora.ag/dlmm/${chartAddress}?referrer=pools`;
                 }
             }
         }
 
-        function renderAIStrategyBox(pool, beData, mData) {
+        function renderAIStrategyBox(pool, rcData, top10pct) {
             const aiBox = document.getElementById('aiOutput');
             const isAlpha = pool.isExternal || currentView === 'alpha';
             if (!aiBox) return;
 
             try {
-                const strategy = buildStrategy(pool, beData);
+                const strategy = buildStrategy(pool, rcData, top10pct);
                 let html = `
                     <div class="ai-header">
                         <span>REKOMENDASI SISTEM</span>
@@ -1426,20 +1494,15 @@
                 `;
                 
                 if (isAlpha) {
+                    const mData = computeAdvancedMetrics(pool);
                     html += `<p style="line-height: 1.6; color: #ececec; margin-bottom:12px;">${strategy.text}</p>`;
                     html += `<div style="font-size:11px; padding:10px; background:rgba(255,255,255,0.05); border-radius:6px; color:var(--text-secondary);">`;
-                    html += `<b>Deep Dive Analytics (Birdeye + DexScreener):</b><br><br>`;
-                    html += `• Wash Trade / Bot Spam: ${mData.isBotSpam ? "<span style='color:var(--accent-red)'>⚠️ Terdeteksi</span>" : "<span style='color:var(--accent-green)'>✅ Bersih</span>"}<br>`;
-                    html += `• Avg Tx Size (1H): $${mData.avgTxSize1m.toFixed(1)} per transaksi<br>`;
+                    html += `<b>Masako Volume Integrity Check:</b><br><br>`;
+                    html += `• Wash Trade / Bot Spam: ${mData.isBotSpam ? "<span style='color:var(--accent-red)'>⚠️ Terdeteksi (Tx Rata-rata < $1)</span>" : "<span style='color:var(--accent-green)'>✅ Bersih</span>"}<br>`;
                     
-                    if (beData && beData.top10HolderPercent !== undefined) {
-                        html += `• Holder Concentration: <b>${(beData.top10HolderPercent * 100).toFixed(1)}%</b> dikuasai Top 10 Wallet.<br>`;
-                        if (beData.creatorPercentage > 0.1) html += `• Creator Holding: <span style="color:var(--accent-red)">${(beData.creatorPercentage * 100).toFixed(1)}% (Waspada Dumping)</span><br>`;
-                    } else if (!beData) {
-                        html += `• Holder Concentration: <span style="color:var(--accent-orange)">Menunggu Audit Birdeye...</span><br>`;
+                    if (rcData) {
+                        html += `• Security Audit: Menggunakan engine RugCheck API dengan auto-filter Liquidity Pool.<br>`;
                     }
-                    
-                    html += `• 5M Vol Spike: <b>${mData.volSpike.toFixed(1)}x</b> dari rata-rata 24j.`;
                     html += `</div>`;
                 } else {
                     html += `<div style="margin-bottom:12px;"><span style="color:white; font-weight:600;">1. Profil Volatilitas (Regime: ${strategy.v.regime.toUpperCase()}):</span><br>`;
@@ -1448,13 +1511,13 @@
                     if (strategy.v.change > 15) html += `Pergerakan harga agresif. `;
                     html += `</div>`;
 
-                    html += `<div style="margin-bottom:12px;"><span style="color:white; font-weight:600;">2. Efisiensi & Kepadatan:</span><br>`;
-                    if (strategy.v.volTvl > 1) html += `💰 <b>Sangat Baik:</b> Volume melampaui TVL. Perputaran uang cepat.`;
+                    html += `<div style="margin-bottom:12px;"><span style="color:white; font-weight:600;">2. Efisiensi DLMM Meteora:</span><br>`;
+                    if (strategy.v.volTvl > 1) html += `💰 <b>Sangat Baik:</b> Volume melampaui TVL. Perputaran uang cepat, Fee tinggi.`;
                     else if (strategy.v.volTvl > 0 && strategy.v.volTvl < 0.2) html += `⚠️ <b>Rendah:</b> TVL terlalu padat dibanding volume. Uang mati berisiko.`;
                     else html += `🟢 <b>Normal:</b> Rasio perputaran TVL di level wajar.`;
                     html += `</div>`;
 
-                    html += `<div><span style="color:white; font-weight:600;">3. Protokol Eksekusi:</span><br>`;
+                    html += `<div><span style="color:white; font-weight:600;">3. Protokol Eksekusi Likuiditas:</span><br>`;
                     html += `<p style="margin-top:4px; line-height: 1.6; color: #ececec;">${strategy.text}</p></div>`;
                 }
                 aiBox.innerHTML = html;

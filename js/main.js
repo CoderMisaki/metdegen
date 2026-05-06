@@ -69,6 +69,10 @@ function togglePin(address, event) {
     }
 }
 
+function isRateLimitedError(err) {
+    return err?.status === 429 || /429/.test(String(err?.message || ''));
+}
+
 
 async function toggleGMGNTrench() {
     state.gmgnTrenchMode = !state.gmgnTrenchMode;
@@ -342,7 +346,11 @@ async function loadPools() {
             if (state.poolsData.length > 0) updateStaleBadge(true); 
             else {
                 if (statusArea) statusArea.style.display = 'none';
-                showInfoBox("Kendala API Agregator", "Gagal memuat pool Meteora dari DexScreener. Pastikan koneksi stabil.", true);
+                if (isRateLimitedError(err)) {
+                    showInfoBox("Akses Dibatasi", "Agregator membatasi permintaan Anda. Sistem akan menyegarkan otomatis.", true);
+                } else {
+                    showInfoBox("Kendala API Agregator", "Gagal memuat pool Meteora dari DexScreener. Pastikan koneksi stabil.", true);
+                }
             }
         }
     } finally { 
@@ -469,7 +477,11 @@ async function fetchAlphaSignals() {
             if (state.alphaData.length > 0) updateStaleBadge(true); 
             else {
                 if (statusArea) statusArea.style.display = 'none';
-                showInfoBox("Akses Dibatasi", "Agregator membatasi permintaan Anda. Sistem akan menyegarkan otomatis.", true);
+                if (isRateLimitedError(e)) {
+                    showInfoBox("Akses Dibatasi", "Agregator membatasi permintaan Anda. Sistem akan menyegarkan otomatis.", true);
+                } else {
+                    showInfoBox("Kendala API Agregator", "Gagal memuat data Alpha dari DexScreener. Pastikan koneksi stabil.", true);
+                }
             }
         }
     } finally {

@@ -96,3 +96,22 @@ export async function fetchPinnedTokens(signal) {
     }
     return fetchedPairs;
 }
+
+export async function fetchGMGNTokenAnalysis({ mint, pairAddress }, signal = null) {
+    const q = new URLSearchParams();
+    if (mint) q.set('mint', mint);
+    if (pairAddress) q.set('pairAddress', pairAddress);
+    return fetchWithCache(`/api/gmgn-token?${q.toString()}`, 45000, signal);
+}
+
+export async function fetchGMGNTrending({ interval = '1m', limit = 50, chain = 'solana', mode = 'trending' } = {}, signal = null) {
+    const q = new URLSearchParams({ interval, limit: String(limit), chain, mode });
+    return fetchWithCache(`/api/gmgn-trending?${q.toString()}`, interval === '1m' ? 8000 : 20000, signal);
+}
+
+export async function fetchGMGNWallet({ mint, wallet, limit = 30 }, signal = null) {
+    const q = new URLSearchParams({ limit: String(limit) });
+    if (mint) q.set('mint', mint);
+    if (wallet) q.set('wallet', wallet);
+    return fetchWithCache(`/api/gmgn-wallet?${q.toString()}`, 20000, signal);
+}

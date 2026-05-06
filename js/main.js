@@ -1,6 +1,6 @@
 import { state, IGNORED_MINTS } from './config.js';
 import { sleep, isValidSolAddress, normalizeAddressInput, getBestPriceChange } from './utils.js';
-import { fetchWithCache, fetchPinnedTokens } from './api.js';
+import { fetchWithCache, fetchPinnedTokens, fetchGMGNTrending } from './api.js';
 import { getDLMMInfoFromLabels, computeAdvancedMetrics, computeAlphaScore } from './engine.js';
 import { updateStaleBadge, showInfoBox, hideInfoBox, showToast, renderList, fillModalData, openModal, closeModal } from './ui.js';
 
@@ -29,6 +29,23 @@ function togglePin(address, event) {
                 : `<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>`;
         }
     }
+}
+
+
+async function toggleGMGNTrench() {
+    state.gmgnTrenchMode = !state.gmgnTrenchMode;
+    document.getElementById('btnGMGNTrench').classList.toggle('active', state.gmgnTrenchMode);
+
+    if (!state.gmgnTrenchMode) return applyFiltersAndRender();
+
+    if (state.currentView !== 'alpha') switchView('alpha');
+    try {
+        const res = await fetchGMGNTrending({ interval: '1m', limit: 80, mode: 'trench' });
+        const trench = Array.isArray(res?.data?.tokens) ? res.data.tokens : (Array.isArray(res?.data) ? res.data : []);
+        const allow = new Set(trench.map(t => t.mint || t.address).filter(Boolean));
+        state.alphaData = state.alphaData.filter(p => allow.has(p.tokenMint) || allow.has(p.address));
+        applyFiltersAndRender();
+    } catch (e) {}
 }
 
 function switchView(view) {
@@ -474,6 +491,7 @@ window.applyFiltersAndRender = applyFiltersAndRender;
 window.closeModal = closeModal;
 window.openModal = openModal;
 window.togglePin = togglePin;
+window.toggleGMGNTrench = toggleGMGNTrench;
 
 // INITIALIZATION
 document.addEventListener('DOMContentLoaded', () => {

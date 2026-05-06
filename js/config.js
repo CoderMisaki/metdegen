@@ -28,5 +28,7 @@ export const state = {
     ctrlSearch: null,
     lastMeteoraFetch: 0,
     lastAlphaFetch: 0,
-    apiCache: new Map()
+    apiCache: new Map(),
+    gmgnCache: new Map(),
+    gmgnTrenchMode: false
 };

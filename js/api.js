@@ -1,6 +1,14 @@
 import { state, MAX_CACHE } from './config.js';
 import { isValidSolAddress } from './utils.js';
 
+function createHttpError(status, url) {
+    const err = new Error(`HTTP Error: ${status}`);
+    err.name = 'ApiHttpError';
+    err.status = status;
+    err.url = url;
+    return err;
+}
+
 export function setCacheLimit(map, key, value, maxSize = MAX_CACHE) {
     if (value === null || value === undefined || value === "" || Number.isNaN(value)) {
         return map.get(key) ?? null;
@@ -33,7 +41,7 @@ export async function fetchWithCache(url, ttl = 60000, signal = null) {
     try {
         const res = await fetch(url, { signal: controller.signal, cache: "no-store" });
         clearTimeout(timeoutId);
-        if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
+        if (!res.ok) throw createHttpError(res.status, url);
         const data = await res.json();
         setCacheLimit(state.apiCache, url, { data, time: now });
         return data;

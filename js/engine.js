@@ -3,13 +3,12 @@ import { formatMoney } from './utils.js';
 
 function extractGMGNMetrics(gmgn = {}) {
     const d = gmgn?.data || gmgn || {};
-    const ratTraderRatio = Number(d.ratTraderRatio ?? d.rat_ratio ?? 0);
-    const bundleRatio = Number(d.bundleRatio ?? d.bundle_ratio ?? 0);
-    const devStatus = d.devStatus || d.dev_status || 'unknown';
-    const smartMoney = d.smartMoney || d.smart_money || {};
-    const smartMoneyWinRate = Number(smartMoney.winRate ?? smartMoney.win_rate ?? 0);
-    const smartMoneyPnL = Number(smartMoney.pnl ?? smartMoney.totalPnl ?? 0);
-    const smartMoneyAccumulation = Number(smartMoney.accumulation ?? smartMoney.netBuy ?? 0);
+    const ratTraderRatio = Number(d.rat_trader_amount_percentage ?? d.rat_ratio ?? 0);
+    const bundleRatio = Number(d.bluechip_owner_percentage ?? d.bundle_ratio ?? 0);
+    const devStatus = d.is_show_alert === true ? '🚨 ALERT' : '✅ CLEAN';
+    const smartMoneyWinRate = Number(d.average_win_rate ?? 0);
+    const smartMoneyPnL = Number(d.total_pnl ?? 0);
+    const smartMoneyAccumulation = Number(d.net_buy_amount ?? 0);
     return { ratTraderRatio, bundleRatio, devStatus, smartMoneyWinRate, smartMoneyPnL, smartMoneyAccumulation };
 }
 

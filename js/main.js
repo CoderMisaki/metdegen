@@ -4,6 +4,44 @@ import { fetchWithCache, fetchPinnedTokens, fetchGMGNTrending } from './api.js';
 import { getDLMMInfoFromLabels, computeAdvancedMetrics, computeAlphaScore } from './engine.js';
 import { updateStaleBadge, showInfoBox, hideInfoBox, showToast, renderList, fillModalData, openModal, closeModal } from './ui.js';
 
+// Global Error Tracker
+(function setupGlobalErrorTracker() {
+    async function reportError(payload) {
+        try {
+            await fetch('/api/log-error', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ...payload, url: window.location.href, timestamp: new Date().toISOString() })
+            });
+        } catch (_) {}
+    }
+
+    window.onerror = function (message, source, lineno, colno, error) {
+        reportError({
+            type: 'runtime',
+            message: message ? String(message) : 'Unknown runtime error',
+            source: source || '',
+            lineno: lineno || 0,
+            colno: colno || 0,
+            error: error?.stack || error?.message || null
+        });
+        return false;
+    };
+
+    window.addEventListener('unhandledrejection', function (event) {
+        const reason = event?.reason;
+        reportError({
+            type: 'unhandledrejection',
+            message: reason?.message || (typeof reason === 'string' ? reason : 'Unhandled promise rejection'),
+            source: 'promise',
+            lineno: 0,
+            colno: 0,
+            error: reason?.stack || JSON.stringify(reason || null)
+        });
+    });
+})();
+
+
 function togglePin(address, event) {
     if (event) event.stopPropagation();
     if (!address) return;

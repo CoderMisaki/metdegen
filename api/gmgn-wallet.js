@@ -6,7 +6,8 @@ module.exports = async function handler(req, res) {
     const { mint, wallet, limit = 30 } = req.query || {};
     if (!mint && !wallet) return json(res, 400, { error: 'mint or wallet is required' });
 
-    const data = await gmgnRequest('/wallet/smart-money', { mint, wallet, limit });
+    const targetMint = mint || wallet;
+    const data = await gmgnRequest(`/defi/quotation/v1/tokens/smart_money/sol/${encodeURIComponent(targetMint)}`, { limit });
     return json(res, 200, { ok: true, source: 'gmgn', data });
   } catch (error) {
     return json(res, 500, { ok: false, error: error.message });

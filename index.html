@@ -1,12 +1,156 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Metdegen</title>
-    <link rel="stylesheet" href="css/style.css" />
-  </head>
-  <body>
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Meteora Alpha Terminal | Masako Engine</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                <line x1="12" y1="22.08" x2="12" y2="12"></line>
+            </svg>
+            <div class="header-text">
+                <div class="header-title">Meteora Alpha Terminal <span id="staleBadge" class="badge-stale">⚠️ CACHED</span></div>
+                <p class="header-subtitle">Powered by Masako Intelligence Engine v20</p>
+            </div>
+        </div>
+
+        <div class="search-box">
+            <input id="searchInput" type="text" class="search-input" placeholder="Cari token CA atau ticker...">
+            <button id="searchBtn" class="btn-solid search-btn">Cari</button>
+        </div>
+
+        <div class="filters" id="filterContainer">
+            <button id="btnMeteora" class="filter-btn active" onclick="switchView('meteora')">💧 Meteora DLMM</button>
+            <button id="btnAlpha" class="filter-btn" onclick="switchView('alpha')">🎯 Signal Alpha</button>
+            <select id="sortMeteora" class="filter-select" onchange="applyFiltersAndRender()" style="display: block;">
+                <option value="fees">💰 24H Fees Tertinggi</option>
+                <option value="trend">🔥 Trend Default</option>
+            </select>
+        </div>
+
+        <div id="systemInfo" class="info-box">
+            <div class="info-title" id="infoTitle">📡 Radar Standby</div>
+            <div id="infoDesc">Sistem standby.</div>
+        </div>
+
+        <div>
+            <div style="display: flex; justify-content: space-between; padding: 0 16px 8px 16px; color: var(--text-tertiary); font-size: 11px; font-weight: 600; text-transform: uppercase;">
+                <div style="flex: 1.5; padding-left: 36px;">Asset Pool</div>
+                <div style="flex: 2; display: flex; justify-content: space-between; padding-right: 16px;">
+                    <div id="colFeeBin" style="width:33%; text-align:left;">24H Fees</div>
+                    <div style="width:33%; text-align:right;">Vol (24H)</div>
+                    <div style="width:33%; text-align:right;">Trend</div>
+                </div>
+            </div>
+
+            <div id="statusArea" class="status-area">Memuat Sistem Mesin Analitik...</div>
+            <div id="poolList"></div>
+        </div>
+    </div>
+
+    <div id="analysisModal" class="modal-overlay" onclick="if(event.target === this) closeModal()">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="flex items-center gap-3">
+                    <img id="mLogo" src="" class="pool-logo" style="width:48px; height:48px;" loading="lazy" referrerpolicy="no-referrer">
+                    <div>
+                        <h2 class="text-base font-bold" style="display:flex; align-items:center; gap:8px;">
+                            <span id="mName">ANALYZING...</span>
+                            <button id="modalPinBtn" class="pin-btn" onclick="togglePin(selectedPoolKey, event)" title="Pantau Token">
+                                <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                            </button>
+                        </h2>
+                        <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px; font-family: monospace;" id="mSubtitle">Loading...</div>
+                    </div>
+                </div>
+                <button class="modal-close" onclick="closeModal()">✕</button>
+            </div>
+
+            <div class="modal-body">
+                <div style="display: flex; flex-direction: column;">
+                    
+                    <div id="alphaMetrics" style="display:none;">
+                        <h3 class="text-xs text-secondary font-semibold" style="margin-bottom:12px;">METRIK ON-CHAIN UTAMA</h3>
+                        <div class="pool-metrics" style="grid-template-columns: repeat(2, 1fr); gap:12px; margin-bottom: 20px;">
+                            <div><div class="metric-label">Price (USD)</div><div id="mPriceAlpha" class="metric-val text-primary">—</div></div>
+                            <div><div class="metric-label">Market Cap</div><div id="mMCAlpha" class="metric-val text-primary">—</div></div>
+                            <div><div class="metric-label">Liquidity (TVL)</div><div id="mTVLAlpha" class="metric-val text-primary">—</div></div>
+                            <div><div class="metric-label">24H Volume</div><div id="mVolAlpha" class="metric-val text-primary">—</div></div>
+                            <div><div class="metric-label">Token Age</div><div id="mAgeAlpha" class="metric-val text-primary">—</div></div>
+                            <div><div class="metric-label">Best Trend</div><div id="mChangeAlpha" class="metric-val text-primary">—</div></div>
+                        </div>
+
+                        <h3 class="text-xs text-secondary font-semibold" style="margin-bottom:12px;">DATA MICROSTRUCTURE & DEX</h3>
+                        <div class="pool-metrics" style="grid-template-columns: repeat(3, 1fr); gap:12px; margin-bottom: 20px;">
+                            <div><div class="metric-label">24H Buys/Sells</div><div id="valMicro1Alpha" class="metric-small text-primary" style="line-height: 1.4;">—</div></div>
+                            <div><div class="metric-label">1H Buys/Sells</div><div id="valMicro2Alpha" class="metric-small text-primary" style="line-height: 1.4;">—</div></div>
+                            <div><div class="metric-label">1H Vol (USD)</div><div id="valMicro3Alpha" class="metric-small text-primary">—</div></div>
+                            <div><div class="metric-label">Volume Quality</div><div id="valMicro4Alpha" class="metric-small text-primary">—</div></div>
+                            <div><div class="metric-label">5M Vol Spike</div><div id="valMicro5Alpha" class="metric-small text-primary">—</div></div>
+                            <div><div class="metric-label">Avg Tx Size</div><div id="valMicro6Alpha" class="metric-small text-primary">—</div></div>
+                        </div>
+                    </div>
+
+                    <div id="meteoraMetrics" style="display:none;">
+                        <h3 class="text-xs text-secondary font-semibold" style="margin-bottom:12px; color: #10b981;">METEORA DLMM STATISTICS <span id="dlmmLoading" style="color:var(--text-tertiary); font-weight:normal; font-size:10px;">(Fetching from Meteora API...)</span></h3>
+                        <div class="meteora-grid" style="margin-bottom: 20px;">
+                            <div class="m-item"><div class="m-label">Pool Age</div><div class="m-val" id="dlmmAge">—</div></div>
+                            <div class="m-item"><div class="m-label">Volatility</div><div class="m-val" id="dlmmVolat">—</div></div>
+                            <div class="m-item"><div class="m-label">Active TVL</div><div class="m-val" id="dlmmActiveTVL">—</div></div>
+                            <div class="m-item"><div class="m-label">Fees/Active TVL</div><div class="m-val" id="dlmmFeesActive">—</div></div>
+                            <div class="m-item"><div class="m-label">Volume/Active TVL</div><div class="m-val" id="dlmmVolActive">—</div></div>
+                            <div class="m-item"><div class="m-label">Total LPs</div><div class="m-val" id="dlmmTotalLPs">—</div></div>
+                            <div class="m-item"><div class="m-label">Open Positions</div><div class="m-val" id="dlmmOpenPos">—</div></div>
+                            <div class="m-item"><div class="m-label">In Range Positions</div><div class="m-val" id="dlmmInRange">—</div></div>
+                            <div class="m-item"><div class="m-label">Avg Fees/Min</div><div class="m-val" id="dlmmAvgFeeMin">—</div></div>
+                            <div class="m-item"><div class="m-label">Avg Vol/Min</div><div class="m-val" id="dlmmAvgVolMin">—</div></div>
+                            <div class="m-item"><div class="m-label">Traders</div><div class="m-val" id="dlmmTraders">—</div></div>
+                            <div class="m-item"><div class="m-label">Swaps</div><div class="m-val" id="dlmmSwaps">—</div></div>
+                            <div class="m-item"><div class="m-label">24h Fees</div><div class="m-val text-green" id="dlmm24hFees">—</div></div>
+                            <div class="m-item"><div class="m-label">24h Fees/TVL</div><div class="m-val" id="dlmm24hFeesTVL">—</div></div>
+                            <div class="m-item"><div class="m-label">Bin Step</div><div class="m-val text-blue" id="dlmmBinStep">—</div></div>
+                            <div class="m-item"><div class="m-label">Base Fee</div><div class="m-val" id="dlmmBaseFee">—</div></div>
+                            <div class="m-item"><div class="m-label">Max Fee</div><div class="m-val" id="dlmmMaxFee">—</div></div>
+                            <div class="m-item"><div class="m-label">TVL (Total)</div><div class="m-val" id="dlmmTVL">—</div></div>
+                        </div>
+                    </div>
+
+                    <h3 class="text-xs text-secondary font-semibold" style="margin-bottom:12px;">SECURITY & HOLDER ANALYTICS (RUGCHECK)</h3>
+                    <div class="pool-metrics" style="grid-template-columns: repeat(2, 1fr); gap:12px;">
+                        <div><div class="metric-label">Top 10 Holders</div><div id="beHolders" class="metric-small text-secondary">Loading...</div></div>
+                        <div><div class="metric-label">Creator / Dev Wallet</div><div id="beCreator" class="metric-small text-secondary">Loading...</div></div>
+                        <div><div class="metric-label">Mint Auth (Cetak Baru)</div><div id="beMint" class="metric-small text-secondary">Loading...</div></div>
+                        <div><div class="metric-label">Freeze Auth (Bekukan)</div><div id="beFreeze" class="metric-small text-secondary">Loading...</div></div>
+                    </div>
+                    
+                    <div class="action-grid">
+                        <button id="mCopyBtn" class="btn btn-outline" style="padding: 12px 0;">Salin CA</button>
+                        <a id="mDexLinkBtn" class="btn btn-outline" style="padding: 12px 0; text-decoration:none;" target="_blank">Chart ↗</a>
+                        <a id="mRugCheckBtn" class="btn btn-outline" style="padding: 12px 0; text-decoration:none;" target="_blank">RugCheck ↗</a>
+                        <a id="mLinkBtn" class="btn btn-solid" style="padding: 12px 0; text-decoration:none;" target="_blank">Trade DEX ↗</a>
+                    </div>
+                </div>
+
+                <div class="flex flex-col">
+                    <h3 class="text-xs text-secondary font-semibold" style="margin-bottom:12px;" id="aiBoxTitle">MASAKO ALGORITHMIC STRATEGY</h3>
+                    <div class="ai-box" style="flex:1;" id="aiOutput"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast">Notifikasi</div>
+
     <script type="module" src="js/main.js"></script>
-  </body>
+</body>
 </html>

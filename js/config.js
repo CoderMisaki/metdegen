@@ -1,12 +1,35 @@
-export const MAX_CACHE = 120;
+export const SYSTEM_CODENAME = 'Masako_Alpha_Engine_v20';
+
+export const MAX_CACHE = 300;
 export const REFRESH_MS = 30_000;
-export const ignoredMints = ["So11111111111111111111111111111111111111112"];
+
+export const IGNORED_MINTS = new Set([
+  'So11111111111111111111111111111111111111112',
+  'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
+  'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB',
+  'mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So',
+  'J1toso1uCk3RLmjorhTtrVwY9HJ7X8V9yYac6Y7kGCPn',
+  'EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm',
+  'DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263',
+]);
 
 export const state = {
-  view: 'meteora',
-  pools: [],
-  alpha: [],
-  selected: null,
-  cache: new Map(),
-  pinned: new Set(JSON.parse(localStorage.getItem('masako:pinned') || '[]')),
+  poolsData: [],
+  alphaData: [],
+  currentView: 'meteora',
+  searchQuery: '',
+  refreshTimer: null,
+  activeModalData: null,
+  selectedPoolKey: null,
+  pinnedTokens: new Set(JSON.parse(localStorage.getItem('masako_pinned_v20') || '[]')),
+  isMeteoraLoading: false,
+  isAlphaLoading: false,
+  ctrlMeteora: null,
+  ctrlAlpha: null,
+  ctrlSearch: null,
+  lastMeteoraFetch: 0,
+  lastAlphaFetch: 0,
+  apiCache: new Map(),
 };
+
+export const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));

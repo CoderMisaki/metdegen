@@ -2,13 +2,17 @@ import { state } from './config.js';
 import { formatMoney } from './utils.js';
 
 function extractGMGNMetrics(gmgn = {}) {
-    const d = gmgn?.data || gmgn || {};
-    const ratTraderRatio = Number(d.rat_trader_amount_percentage ?? d.rat_ratio ?? 0);
-    const bundleRatio = Number(d.bluechip_owner_percentage ?? d.bundle_ratio ?? 0);
+    const raw = gmgn || {};
+    const d = raw.data || raw;
+    const smartMoneyRaw = d.smartMoney || d;
+    const smartMoney = smartMoneyRaw.data || smartMoneyRaw;
+
+    const ratTraderRatio = Number(d.rat_trader_amount_percentage ?? 0);
+    const bundleRatio = Number(d.bluechip_owner_percentage ?? 0);
     const devStatus = d.is_show_alert === true ? '🚨 ALERT' : '✅ CLEAN';
-    const smartMoneyWinRate = Number(d.average_win_rate ?? 0);
-    const smartMoneyPnL = Number(d.total_pnl ?? 0);
-    const smartMoneyAccumulation = Number(d.net_buy_amount ?? 0);
+    const smartMoneyWinRate = Number(smartMoney.average_win_rate ?? 0);
+    const smartMoneyPnL = Number(smartMoney.total_pnl ?? 0);
+    const smartMoneyAccumulation = Number(smartMoney.net_buy_amount ?? 0);
     return { ratTraderRatio, bundleRatio, devStatus, smartMoneyWinRate, smartMoneyPnL, smartMoneyAccumulation };
 }
 

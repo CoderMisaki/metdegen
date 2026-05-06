@@ -32,6 +32,7 @@
         <div class="filters" id="filterContainer">
             <button id="btnMeteora" class="filter-btn active" onclick="switchView('meteora')">💧 Meteora DLMM</button>
             <button id="btnAlpha" class="filter-btn" onclick="switchView('alpha')">🎯 Signal Alpha</button>
+            <button id="btnGMGNTrench" class="filter-btn" onclick="toggleGMGNTrench()">🎯 GMGN Trench</button>
             <select id="sortMeteora" class="filter-select" onchange="applyFiltersAndRender()" style="display: block;">
                 <option value="fees">💰 24H Fees Tertinggi</option>
                 <option value="trend">🔥 Trend Default</option>
@@ -133,6 +134,15 @@
                         <div><div class="metric-label">Freeze Auth (Bekukan)</div><div id="beFreeze" class="metric-small text-secondary">Loading...</div></div>
                     </div>
                     
+
+                    <h3 class="text-xs text-secondary font-semibold" style="margin:16px 0 12px 0;">GMGN ON-CHAIN INTELLIGENCE</h3>
+                    <div class="pool-metrics" style="grid-template-columns: repeat(2, 1fr); gap:12px;">
+                        <div><div class="metric-label">Rat Trader Ratio</div><div id="gmgnRat" class="metric-small text-secondary">—</div></div>
+                        <div><div class="metric-label">Bundle Ratio</div><div id="gmgnBundle" class="metric-small text-secondary">—</div></div>
+                        <div><div class="metric-label">Dev Status</div><div id="gmgnDev" class="metric-small text-secondary">—</div></div>
+                        <div><div class="metric-label">Smart Money P&L</div><div id="gmgnSmart" class="metric-small text-secondary">—</div></div>
+                    </div>
+
                     <div class="action-grid">
                         <button id="mCopyBtn" class="btn btn-outline" style="padding: 12px 0;">Salin CA</button>
                         <a id="mDexLinkBtn" class="btn btn-outline" style="padding: 12px 0; text-decoration:none;" target="_blank">Chart ↗</a>

@@ -1,7 +1,7 @@
 import { state } from './config.js';
 import { safeExec, escapeHTML, formatAddress, formatMoney, formatPct, formatNum, formatAge } from './utils.js';
 import { computeAdvancedMetrics, getVolatilityProfile, buildStrategy } from './engine.js';
-import { fetchMeteoraNative, fetchRugCheckSecure } from './api.js';
+import { fetchMeteoraNative, fetchRugCheckSecure, fetchGMGNTokenAnalysis, fetchGMGNWallet } from './api.js';
 
 export function updateStaleBadge(isStale) {
     document.getElementById('staleBadge').style.display = isStale ? 'inline-block' : 'none';
@@ -126,13 +126,13 @@ export function renderList(dataToRender) {
     }
 }
 
-export function renderAIStrategyBox(pool, rcData, top10pct) {
+export function renderAIStrategyBox(pool, rcData, top10pct, gmgnData = null) {
     const aiBox = document.getElementById('aiOutput');
     const isAlpha = pool.isExternal || state.currentView === 'alpha';
     if (!aiBox) return;
 
     try {
-        const strategy = buildStrategy(pool, rcData, top10pct);
+        const strategy = buildStrategy(pool, rcData, top10pct, gmgnData);
         let html = `
             <div class="ai-header">
                 <span>REKOMENDASI SISTEM</span>
@@ -318,6 +318,29 @@ export async function fillModalData(pool) {
         }).catch(e => {
             document.getElementById('dlmmLoading').innerText = '(Fetch Timeout)';
         });
+
+
+    const mint = pool.tokenMint || pool.altMint;
+    Promise.allSettled([
+        fetchGMGNTokenAnalysis({ mint, pairAddress: pool.pairAddress || pool.address }),
+        fetchGMGNWallet({ mint, limit: 20 })
+    ]).then(([tokenRes, walletRes]) => {
+        const tokenData = tokenRes.status === 'fulfilled' ? tokenRes.value?.data || {} : {};
+        const walletData = walletRes.status === 'fulfilled' ? walletRes.value?.data || {} : {};
+        pool.gmgnData = { ...tokenData, smartMoney: walletData.smartMoney || walletData };
+
+        const rat = Number(pool.gmgnData.ratTraderRatio ?? pool.gmgnData.rat_ratio ?? 0);
+        const bundle = Number(pool.gmgnData.bundleRatio ?? pool.gmgnData.bundle_ratio ?? 0);
+        const winRate = Number(pool.gmgnData.smartMoney?.winRate ?? pool.gmgnData.smartMoney?.win_rate ?? 0);
+        const pnl = Number(pool.gmgnData.smartMoney?.pnl ?? pool.gmgnData.smartMoney?.totalPnl ?? 0);
+
+        safeSetText('gmgnRat', rat ? `${(rat*100).toFixed(1)}%` : '—', rat >= 0.25 ? 'metric-small text-red' : 'metric-small text-green');
+        safeSetText('gmgnBundle', bundle ? `${(bundle*100).toFixed(1)}%` : '—', bundle >= 0.25 ? 'metric-small text-red' : 'metric-small text-green');
+        safeSetText('gmgnDev', pool.gmgnData.devStatus || pool.gmgnData.dev_status || 'Unknown', 'metric-small text-primary');
+        safeSetText('gmgnSmart', winRate ? `WR ${(winRate*100).toFixed(1)}% | P&L ${formatMoney(pnl)}` : '—', (winRate >= 0.6 && pnl > 0) ? 'metric-small text-green' : 'metric-small text-secondary');
+    }).catch(() => {
+        safeSetText('gmgnRat', 'Unavailable', 'metric-small text-secondary');
+    });
     }
 
     safeSetText('beHolders', 'Mengaudit...', 'metric-small text-secondary');

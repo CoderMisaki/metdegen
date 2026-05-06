@@ -1,6 +1,18 @@
 import { state } from './config.js';
 import { formatMoney } from './utils.js';
 
+function extractGMGNMetrics(gmgn = {}) {
+    const d = gmgn?.data || gmgn || {};
+    const ratTraderRatio = Number(d.ratTraderRatio ?? d.rat_ratio ?? 0);
+    const bundleRatio = Number(d.bundleRatio ?? d.bundle_ratio ?? 0);
+    const devStatus = d.devStatus || d.dev_status || 'unknown';
+    const smartMoney = d.smartMoney || d.smart_money || {};
+    const smartMoneyWinRate = Number(smartMoney.winRate ?? smartMoney.win_rate ?? 0);
+    const smartMoneyPnL = Number(smartMoney.pnl ?? smartMoney.totalPnl ?? 0);
+    const smartMoneyAccumulation = Number(smartMoney.accumulation ?? smartMoney.netBuy ?? 0);
+    return { ratTraderRatio, bundleRatio, devStatus, smartMoneyWinRate, smartMoneyPnL, smartMoneyAccumulation };
+}
+
 export function getDLMMInfoFromLabels(labels) {
     let binStep = null;
     let fee = null;
@@ -73,7 +85,7 @@ export function computeAdvancedMetrics(p, avgVolBaseline = 0) {
     };
 }
 
-export function computeAlphaScore(p, avgVol = 0) {
+export function computeAlphaScore(p, avgVol = 0, gmgn = null) {
     const m = computeAdvancedMetrics(p, avgVol);
     const age = p.ageHours || 999;
     
@@ -91,6 +103,16 @@ export function computeAlphaScore(p, avgVol = 0) {
     if (age < 24) score += 10;
 
     if (m.volTvl > 20 && Math.abs(m.priceChange5m) < 1) score -= 30;
+
+    const g = extractGMGNMetrics(gmgn || p.gmgnData);
+    if (g.bundleRatio >= 0.35) score -= 55;
+    else if (g.bundleRatio >= 0.2) score -= 30;
+
+    if (g.ratTraderRatio >= 0.35) score -= 45;
+    else if (g.ratTraderRatio >= 0.2) score -= 20;
+
+    if (g.smartMoneyWinRate >= 0.65 && g.smartMoneyAccumulation > 0) score += 22;
+    if (g.smartMoneyPnL > 0) score += 8;
     if (p.priceChange < -40 && !m.isBuyDominant) score -= 30;
     score -= (m.liquidityRisk * 10);
 
@@ -113,7 +135,7 @@ export function getVolatilityProfile(pool) {
     return { volatilityScore, regime, change, volTvl, age, bin };
 }
 
-export function buildStrategy(pool, rcData = null, top10pct = 0) {
+export function buildStrategy(pool, rcData = null, top10pct = 0, gmgn = null) {
     const v = getVolatilityProfile(pool);
     let recommendation = ""; let recColor = ""; let text = "";
 
@@ -135,6 +157,7 @@ export function buildStrategy(pool, rcData = null, top10pct = 0) {
     if (state.currentView === 'alpha' || pool.isExternal) {
         const m = computeAdvancedMetrics(pool);
         const score = pool.sniperScore || 0;
+        const g = extractGMGNMetrics(gmgn || pool.gmgnData);
         
         if (m.isBotSpam) {
             recommendation = "AVOID / BOT SPAM DETECTED"; recColor = "#ef4444";
@@ -148,6 +171,12 @@ export function buildStrategy(pool, rcData = null, top10pct = 0) {
         } else if (creatorPct > 0.5) {
             recommendation = "HIGH RISK / CREATOR HOARDING"; recColor = "#ef4444";
             text = `⚠️ Kreator token menahan suplai sangat besar (${(creatorPct*100).toFixed(0)}%). Risiko exit liquidity sangat tinggi.`;
+        } else if ((g.bundleRatio >= 0.35 || g.ratTraderRatio >= 0.35)) {
+            recommendation = "RED FLAG / GMGN RISK DETECTED"; recColor = "#ef4444";
+            text = `🚨 GMGN red flag: Bundle ${(g.bundleRatio*100).toFixed(1)}% | Rat Trader ${(g.ratTraderRatio*100).toFixed(1)}%. Hindari entry agresif.`;
+        } else if (g.smartMoneyWinRate >= 0.65 && g.smartMoneyAccumulation > 0 && score > 55) {
+            recommendation = "SMART MONEY FOLLOW"; recColor = "#10b981";
+            text = `🧠 Akumulasi Smart Money terkonfirmasi. Win rate ${(g.smartMoneyWinRate*100).toFixed(1)}% dengan net buy positif.`;
         } else if (m.whaleAccumulation && score > 60) {
             recommendation = "STRONG BUY (ORGANIC DIP)"; recColor = "#10b981";
             text = `🚀 Momentum kuat. Dominasi USD Buy terkonfirmasi (Buy ${formatMoney(m.buyVol1m)} vs Sell ${formatMoney(m.sellVol1m)}). Smart money akumulasi.`;

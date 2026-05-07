@@ -559,12 +559,30 @@ function applyFiltersAndRender() {
 
 function startAutoRefresh() {
     if (state.refreshTimer) clearInterval(state.refreshTimer);
-    state.refreshTimer = setInterval(() => {
-        if (document.visibilityState === "visible") {
-            if (state.currentView === 'meteora') loadPools();
-            else fetchAlphaSignals();
+    state.refreshTimer = setInterval(async () => {
+        if (document.visibilityState !== "visible") return;
+        if (state.isRefreshing) return;
+
+        state.isRefreshing = true;
+        try {
+            if (state.currentView === 'meteora') await loadPools();
+            else await fetchAlphaSignals();
+        } finally {
+            state.isRefreshing = false;
         }
     }, 30000); 
+}
+
+function startCacheCleanup() {
+    setInterval(() => {
+        const now = Date.now();
+        for (const [key, value] of state.apiCache.entries()) {
+            if (!value?.time || now - value.time > 300000) state.apiCache.delete(key);
+        }
+        for (const [key, value] of state.gmgnCache.entries()) {
+            if (!value?.time || now - value.time > 300000) state.gmgnCache.delete(key);
+        }
+    }, 60000);
 }
 
 // BINDING KE WINDOW GLOBAL UNTUK MENCEGAH ERROR DI HTML
@@ -593,5 +611,6 @@ document.addEventListener("visibilitychange", () => {
 
 window.onload = () => { 
     loadPools(); 
-    startAutoRefresh(); 
+    startAutoRefresh();
+    startCacheCleanup();
 };

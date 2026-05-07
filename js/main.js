@@ -1,5 +1,5 @@
-import { state, MAX_CACHE } from './config.js';
-import { isValidSolAddress } from './utils.js';
+import { state, MAX_CACHE, IGNORED_MINTS } from './config.js';
+import { isValidSolAddress, normalizeAddressInput } from './utils.js';
 import { fetchWithCache, fetchPinnedTokens, fetchGMGNTrending } from './api.js';
 import { getDLMMInfoFromLabels, computeAdvancedMetrics, computeAlphaScore } from './engine.js';
 import { updateStaleBadge, showInfoBox, hideInfoBox, showToast, renderList, fillModalData, openModal, closeModal } from './ui.js';
@@ -41,6 +41,9 @@ import { updateStaleBadge, showInfoBox, hideInfoBox, showToast, renderList, fill
     });
 })();
 
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 function togglePin(address, event) {
     if (event) event.stopPropagation();
@@ -96,7 +99,6 @@ function getReadableApiError(err) {
 
     return 'Gagal memuat data dari agregator.';
 }
-
 
 async function toggleGMGNTrench() {
     state.gmgnTrenchMode = !state.gmgnTrenchMode;
@@ -206,7 +208,7 @@ async function fetchSearchDirectly(q) {
     statusArea.innerText = 'Pencarian memindai database on-chain...';
 
     try {
-        const res = await fetchWithCache(`https://api.dexscreener.com/latest/dex/search?q=${q}`, 60000, signal);
+        const res = await fetchWithCache(`https://api.dexscreener.com/latest/dex/search?q=${q}`, 60000, signal).catch(() => null);
         if (signal?.aborted) return;
 
         const solPairs = (res?.pairs || []).filter(p => p.chainId === 'solana');
@@ -266,8 +268,8 @@ async function loadPools() {
 
     try {
         const [boostsRes, profilesRes] = await Promise.allSettled([
-            fetchWithCache('https://api.dexscreener.com/token-boosts/top/v1', 60000, signal),
-            fetchWithCache('https://api.dexscreener.com/token-profiles/latest/v1', 60000, signal)
+            fetchWithCache('https://api.dexscreener.com/token-boosts/top/v1', 60000, signal).catch(() => null),
+            fetchWithCache('https://api.dexscreener.com/token-profiles/latest/v1', 60000, signal).catch(() => null)
         ]);
         
         if (signal?.aborted) return;
@@ -296,7 +298,8 @@ async function loadPools() {
 
         for(let i=0; i < uniqueMints.length; i+=30) {
             const chunk = uniqueMints.slice(i, i+30).join(',');
-            const res = await fetchWithCache(`https://api.dexscreener.com/latest/dex/tokens/${chunk}`, 30000, signal);
+            // FIXED: Ditambahkan .catch(() => null) agar loop tidak berhenti jika ada 1 chunk yang gagal
+            const res = await fetchWithCache(`https://api.dexscreener.com/latest/dex/tokens/${chunk}`, 30000, signal).catch(() => null);
             if (signal?.aborted) return;
             
             if(res && res.pairs) {
@@ -410,8 +413,8 @@ async function fetchAlphaSignals() {
 
     try {
         const [bRes, pRes] = await Promise.allSettled([
-            fetchWithCache('https://api.dexscreener.com/token-boosts/top/v1', 60000, signal),
-            fetchWithCache('https://api.dexscreener.com/token-profiles/latest/v1', 60000, signal)
+            fetchWithCache('https://api.dexscreener.com/token-boosts/top/v1', 60000, signal).catch(() => null),
+            fetchWithCache('https://api.dexscreener.com/token-profiles/latest/v1', 60000, signal).catch(() => null)
         ]);
         
         if (signal?.aborted) return;
@@ -428,7 +431,8 @@ async function fetchAlphaSignals() {
 
         for(let i=0; i < uniqueMints.length; i+=30) {
             const chunk = uniqueMints.slice(i, i+30).join(',');
-            const res = await fetchWithCache(`https://api.dexscreener.com/latest/dex/tokens/${chunk}`, 30000, signal);
+            // FIXED: Ditambahkan .catch(() => null) agar loop tidak berhenti
+            const res = await fetchWithCache(`https://api.dexscreener.com/latest/dex/tokens/${chunk}`, 30000, signal).catch(() => null);
             if (signal?.aborted) return;
             if(res && res.pairs) {
                  allPairs.push(...res.pairs.filter(x => x.chainId === 'solana' && !IGNORED_MINTS.has(x.baseToken?.address)));
@@ -592,6 +596,15 @@ window.closeModal = closeModal;
 window.openModal = openModal;
 window.togglePin = togglePin;
 window.toggleGMGNTrench = toggleGMGNTrench;
+
+function getBestPriceChange(dex) {
+    if (!dex || !dex.priceChange) return null;
+    if (typeof dex.priceChange.h24 === 'number') return Number(dex.priceChange.h24);
+    if (typeof dex.priceChange.h6 === 'number') return Number(dex.priceChange.h6);
+    if (typeof dex.priceChange.h1 === 'number') return Number(dex.priceChange.h1);
+    if (typeof dex.priceChange.m5 === 'number') return Number(dex.priceChange.m5);
+    return null;
+}
 
 // INITIALIZATION
 document.addEventListener('DOMContentLoaded', () => {

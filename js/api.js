@@ -262,9 +262,76 @@ export async function fetchGMGNTrending({ interval = '1m', limit = 50, chain = '
     return fetchWithCache(`/api/gmgn-trending?${q.toString()}`, interval === '1m' ? 8000 : 20000, signal);
 }
 
-export async function fetchGMGNWallet({ mint, wallet, limit = 30 }, signal = null) {
-    const q = new URLSearchParams({ limit: String(limit) });
-    if (mint) q.set('mint', mint);
-    if (wallet) q.set('wallet', wallet);
+export async function fetchGMGNWallet({ wallet }, signal = null) {
+    if (!wallet || !isValidSolAddress(wallet)) return null;
+    const q = new URLSearchParams();
+    q.set('wallet', wallet);
     return fetchWithCache(`/api/gmgn-wallet?${q.toString()}`, 20000, signal);
+}
+
+
+export function normalizeGMGNTrending(payload = {}) {
+    const root = payload?.data || payload || {};
+    const list = root.tokens || root.list || root.items || root.rows || root.data || [];
+    return Array.isArray(list) ? list : [];
+}
+
+export function normalizeGMGNToken(payload = {}) {
+    const d = payload?.data || payload || {};
+    return d?.data || d?.result || d?.token || d || {};
+}
+
+export function normalizeGMGNWallet(payload = {}) {
+    const d = payload?.data || payload || {};
+    const base = d?.data || d;
+    return { profit: base?.profit || base?.profit_stat || base?.profitStat || base, activity: base?.activity || base?.wallet_activity || [] };
+}
+
+export function normalizeDexPair(pair = {}) {
+    return {
+        address: pair.pairAddress || '',
+        mint: pair.baseToken?.address || pair.tokenAddress || '',
+        name: pair.baseToken?.name || pair.baseToken?.symbol || 'Unknown',
+        priceUsd: Number(pair.priceUsd || 0),
+        liquidityUsd: Number(pair.liquidity?.usd || 0),
+        volume24h: Number(pair.volume?.h24 || 0)
+    };
+}
+
+const requestManager = {
+    queue: [], active: 0, limit: 3, timers: new Map(), modalController: null
+};
+
+export function createRequestManager({ concurrency = 3 } = {}) {
+    requestManager.limit = Math.max(1, concurrency);
+    return {
+        enqueue(task) {
+            return new Promise((resolve, reject) => {
+                requestManager.queue.push(async () => {
+                    try { resolve(await task()); } catch (e) { reject(e); }
+                });
+                drainQueue();
+            });
+        },
+        debounce(key, fn, wait = 200) {
+            clearTimeout(requestManager.timers.get(key));
+            return new Promise(resolve => {
+                const id = setTimeout(async () => resolve(await fn()), wait);
+                requestManager.timers.set(key, id);
+            });
+        },
+        abortPreviousModal() {
+            if (requestManager.modalController) requestManager.modalController.abort();
+            requestManager.modalController = new AbortController();
+            return requestManager.modalController.signal;
+        }
+    };
+}
+
+function drainQueue() {
+    while (requestManager.active < requestManager.limit && requestManager.queue.length) {
+        const job = requestManager.queue.shift();
+        requestManager.active++;
+        Promise.resolve(job()).finally(() => { requestManager.active--; drainQueue(); });
+    }
 }

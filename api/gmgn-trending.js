@@ -3,14 +3,13 @@ const { gmgnRequest, json } = require('./gmgn-utils');
 module.exports = async function handler(req, res) {
   if (req.method !== 'GET') return json(res, 405, { error: 'Method not allowed' });
   try {
-    const { interval = '1m', limit = 50, chain = 'sol', mode = 'trending' } = req.query || {};
-    const normalizedChain = String(chain).toLowerCase() === 'solana' ? 'sol' : String(chain).toLowerCase();
+    const { interval = '1h', limit = 50, mode = 'trending' } = req.query || {};
+    const isTrench = String(mode).toLowerCase() === 'trench';
 
-    const endpoint = `/defi/quotation/v1/rank/${encodeURIComponent(normalizedChain)}/swaps/${encodeURIComponent(interval)}`;
-    const data = await gmgnRequest(endpoint, {
-      orderby: 'swaps',
-      direction: 'desc',
-      limit
+    const path = isTrench ? '/trs/api/v1/trenches_rank' : '/api/v1/rank/sol/swaps/1h';
+    const data = await gmgnRequest(path, {
+      orderby: 'swaps', direction: 'desc', limit,
+      'filters[]': ['renounced', 'frozen'], interval
     });
     return json(res, 200, { ok: true, source: 'gmgn', mode, data });
   } catch (error) {

@@ -174,6 +174,15 @@ export function renderAIStrategyBox(pool, rcData, top10pct, gmgnData = null) {
     } catch(e) {}
 }
 
+
+function unwrapGMGN(payload) {
+    let d = payload?.data ?? payload;
+    if (d && typeof d === 'object') {
+        d = d.data ?? d.result ?? d.items?.[0] ?? d;
+    }
+    return d || {};
+}
+
 export async function fillModalData(pool) {
     if (!pool) return;
 
@@ -334,23 +343,43 @@ export async function fillModalData(pool) {
         fetchGMGNWallet({ mint, limit: 20 })
     ]).then(([tokenRes, walletRes]) => {
         if (state.modalSession !== modalSession) return;
-        let tData = tokenRes.status === 'fulfilled' ? tokenRes.value : {};
-        tData = tData?.data?.data || tData?.data || tData;
-        let wData = walletRes.status === 'fulfilled' ? walletRes.value : {};
-        wData = wData?.data?.data || wData?.data || wData;
+        const tokenRaw = tokenRes.status === 'fulfilled' ? tokenRes.value : null;
+        const walletRaw = walletRes.status === 'fulfilled' ? walletRes.value : null;
+
+        const tData = unwrapGMGN(tokenRaw);
+        const wData = unwrapGMGN(walletRaw);
 
         pool.gmgnData = { ...tData, smartMoney: wData };
 
-        const ratVal = tData.rat_trader_amount_percentage ?? tData.rat_ratio;
-        const bundleVal = tData.bluechip_owner_percentage ?? tData.bundle_ratio;
+        const ratVal = tData.rat_trader_amount_percentage ?? tData.rat_ratio ?? tData.ratTraderRatio ?? null;
+        const bundleVal = tData.bluechip_owner_percentage ?? tData.bundle_ratio ?? tData.bundleRatio ?? null;
         const devStatus = tData.is_show_alert === true ? '🚨 ALERT' : '✅ CLEAN';
-        const winRateVal = wData.average_win_rate ?? wData.win_rate;
-        const pnlVal = wData.total_pnl ?? wData.pnl;
+        const winRateVal = wData.average_win_rate ?? wData.win_rate ?? null;
+        const pnlVal = wData.total_pnl ?? wData.pnl ?? null;
 
-        safeSetText('gmgnRat', ratVal != null ? `${(Number(ratVal) * 100).toFixed(1)}%` : 'Data Kosong', Number(ratVal) >= 0.25 ? 'metric-small text-red' : 'metric-small text-green');
-        safeSetText('gmgnBundle', bundleVal != null ? `${(Number(bundleVal) * 100).toFixed(1)}%` : 'Data Kosong', Number(bundleVal) >= 0.25 ? 'metric-small text-red' : 'metric-small text-green');
+        safeSetText(
+          'gmgnRat',
+          ratVal != null ? `${(Number(ratVal) * 100).toFixed(1)}%` : 'Unavailable',
+          ratVal != null && Number(ratVal) >= 0.25 ? 'metric-small text-red' : 'metric-small text-green'
+        );
+
+        safeSetText(
+          'gmgnBundle',
+          bundleVal != null ? `${(Number(bundleVal) * 100).toFixed(1)}%` : 'Unavailable',
+          bundleVal != null && Number(bundleVal) >= 0.25 ? 'metric-small text-red' : 'metric-small text-green'
+        );
+
         safeSetText('gmgnDev', devStatus, 'metric-small text-primary');
-        safeSetText('gmgnSmart', winRateVal != null ? `WR ${(Number(winRateVal) * 100).toFixed(1)}% | P&L ${formatMoney(Number(pnlVal ?? 0))}` : 'Data Kosong', (Number(winRateVal) >= 0.6 && Number(pnlVal) > 0) ? 'metric-small text-green' : 'metric-small text-secondary');
+
+        safeSetText(
+          'gmgnSmart',
+          winRateVal != null
+            ? `WR ${(Number(winRateVal) * 100).toFixed(1)}% | P&L ${formatMoney(Number(pnlVal ?? 0))}`
+            : 'Unavailable',
+          (winRateVal != null && Number(winRateVal) >= 0.6 && Number(pnlVal ?? 0) > 0)
+            ? 'metric-small text-green'
+            : 'metric-small text-secondary'
+        );
     }).catch(() => {
         if (state.modalSession !== modalSession) return;
         safeSetText('gmgnRat', 'Unavailable', 'metric-small text-secondary');

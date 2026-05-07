@@ -7,7 +7,7 @@ module.exports = async function handler(req, res) {
     if (!mint && !pairAddress) return json(res, 400, { error: 'mint or pairAddress is required' });
 
     const targetMint = mint || pairAddress;
-    const data = await gmgnRequest(`/defi/quotation/v1/tokens/security/sol/${encodeURIComponent(targetMint)}`);
+    const data = await gmgnRequest(`/api/v1/mutil_window_token_security_launchpad/sol/${encodeURIComponent(targetMint)}`);
     return json(res, 200, { ok: true, source: 'gmgn', data });
   } catch (error) {
     return json(res, 500, { ok: false, error: error.message });

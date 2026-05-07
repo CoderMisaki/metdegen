@@ -6,20 +6,19 @@ function json(res, status, payload) {
 }
 
 async function gmgnRequest(path, query = {}) {
-  const apiKey = process.env.GMGN_API_KEY;
-  if (!apiKey) throw new Error('GMGN_API_KEY is not configured');
-
   const url = new URL(`${GMGN_BASE_URL}${path}`);
   Object.entries(query).forEach(([k, v]) => {
-    if (v !== undefined && v !== null && v !== '') url.searchParams.set(k, String(v));
+    if (v !== undefined && v !== null && v !== '') {
+      if (Array.isArray(v)) v.forEach(item => url.searchParams.append(k, String(item)));
+      else url.searchParams.set(k, String(v));
+    }
   });
 
   const res = await fetch(url.toString(), {
     headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'x-api-key': apiKey,
       'Accept': 'application/json, text/plain, */*',
-      'User-Agent': 'metdegen/1.0 (+https://metdegen.app)'
+      'User-Agent': 'metdegen/1.0 (+https://metdegen.app)',
+      'Referer': 'https://gmgn.ai/'
     }
   });
 

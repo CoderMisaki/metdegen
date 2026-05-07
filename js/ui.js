@@ -1,7 +1,7 @@
 import { state } from './config.js';
 import { safeExec, escapeHTML, formatAddress, formatMoney, formatPct, formatNum, formatAge } from './utils.js';
 import { computeAdvancedMetrics, getVolatilityProfile, buildStrategy } from './engine.js';
-import { fetchMeteoraNative, fetchRugCheckSecure, fetchGMGNTokenAnalysis, fetchGMGNWallet } from './api.js';
+import { fetchMeteoraNative, fetchRugCheckSecure, fetchGMGNTokenAnalysis, fetchGMGNWallet, normalizeGMGNToken, normalizeGMGNWallet, createRequestManager } from './api.js';
 
 export function updateStaleBadge(isStale) {
     document.getElementById('staleBadge').style.display = isStale ? 'inline-block' : 'none';
@@ -175,6 +175,8 @@ export function renderAIStrategyBox(pool, rcData, top10pct, gmgnData = null) {
 }
 
 
+const rm = createRequestManager({ concurrency: 2 });
+
 function unwrapGMGN(payload) {
     let d = payload?.data ?? payload;
     if (d && typeof d === 'object') {
@@ -338,24 +340,26 @@ export async function fillModalData(pool) {
 
 
     const mint = pool.tokenMint || pool.altMint;
-    Promise.allSettled([
-        fetchGMGNTokenAnalysis({ mint, pairAddress: pool.pairAddress || pool.address }),
-        fetchGMGNWallet({ mint, limit: 20 })
-    ]).then(([tokenRes, walletRes]) => {
+    const modalSignal = rm.abortPreviousModal();
+    rm.debounce('modal_gmgn', () => rm.enqueue(() => Promise.allSettled([
+        fetchGMGNTokenAnalysis({ mint, pairAddress: pool.pairAddress || pool.address }, modalSignal),
+        fetchGMGNWallet({ wallet: pool.address }, modalSignal)
+    ])), 150).then(([tokenRes, walletRes]) => {
         if (state.modalSession !== modalSession) return;
         const tokenRaw = tokenRes.status === 'fulfilled' ? tokenRes.value : null;
         const walletRaw = walletRes.status === 'fulfilled' ? walletRes.value : null;
 
-        const tData = unwrapGMGN(tokenRaw);
-        const wData = unwrapGMGN(walletRaw);
+        const tData = normalizeGMGNToken(tokenRaw);
+        const wData = normalizeGMGNWallet(walletRaw);
 
         pool.gmgnData = { ...tData, smartMoney: wData };
 
         const ratVal = tData.rat_trader_amount_percentage ?? tData.rat_ratio ?? tData.ratTraderRatio ?? null;
         const bundleVal = tData.bluechip_owner_percentage ?? tData.bundle_ratio ?? tData.bundleRatio ?? null;
         const devStatus = tData.is_show_alert === true ? '🚨 ALERT' : '✅ CLEAN';
-        const winRateVal = wData.average_win_rate ?? wData.win_rate ?? null;
-        const pnlVal = wData.total_pnl ?? wData.pnl ?? null;
+        const walletProfit = wData?.profit || {};
+        const winRateVal = walletProfit.average_win_rate ?? walletProfit.win_rate ?? null;
+        const pnlVal = walletProfit.total_pnl ?? walletProfit.pnl ?? null;
 
         safeSetText(
           'gmgnRat',

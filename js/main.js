@@ -69,8 +69,32 @@ function togglePin(address, event) {
     }
 }
 
-function isRateLimitedError(err) {
-    return err?.status === 429 || /429/.test(String(err?.message || ''));
+function getReadableApiError(err) {
+    if (!err) return 'Gagal memuat data agregator.';
+
+    const msg = String(err.message || '').toLowerCase();
+
+    if (err.status === 429 || msg.includes('429')) {
+        return 'Permintaan terlalu sering. DexScreener sedang membatasi akses sementara.';
+    }
+
+    if (err.status === 403 || msg.includes('403')) {
+        return 'Akses ditolak oleh upstream. Cek header, key, atau kebijakan API.';
+    }
+
+    if (err.status >= 500) {
+        return 'Server upstream sedang bermasalah. Coba lagi beberapa saat.';
+    }
+
+    if (msg.includes('invalid json') || msg.includes('empty response')) {
+        return 'DexScreener mengirim response yang tidak valid atau kosong.';
+    }
+
+    if (err.name === 'AbortError') {
+        return 'Request dibatalkan karena timeout.';
+    }
+
+    return 'Gagal memuat data dari agregator.';
 }
 
 
@@ -342,18 +366,22 @@ async function loadPools() {
         }
 
     } catch (err) {
-        if(err.name !== 'AbortError') {
-            if (state.poolsData.length > 0) updateStaleBadge(true); 
-            else {
+        if (err.name !== 'AbortError') {
+            if (state.poolsData.length > 0) {
+                updateStaleBadge(true);
+                showInfoBox(
+                    "Data Lama Dipakai",
+                    "Refresh gagal, jadi sistem memakai data cache terakhir yang masih ada.",
+                    true
+                );
+            } else {
                 if (statusArea) statusArea.style.display = 'none';
-                if (isRateLimitedError(err)) {
-                    showInfoBox("Akses Dibatasi", "Agregator membatasi permintaan Anda. Sistem akan menyegarkan otomatis.", true);
-                } else {
-                    showInfoBox("Kendala API Agregator", "Gagal memuat pool Meteora dari DexScreener. Pastikan koneksi stabil.", true);
-                }
+
+                const friendly = getReadableApiError(err);
+                showInfoBox("Kendala API Agregator", friendly, true);
             }
         }
-    } finally { 
+    } finally {
         state.isMeteoraLoading = false; 
         if (statusArea && (state.poolsData.length > 0 || document.getElementById('systemInfo').classList.contains('show'))) {
             statusArea.style.display = 'none';
@@ -472,16 +500,20 @@ async function fetchAlphaSignals() {
             applyFiltersAndRender();
         }
 
-    } catch (e) {
-        if(e.name !== 'AbortError') {
-            if (state.alphaData.length > 0) updateStaleBadge(true); 
-            else {
+    } catch (err) {
+        if (err.name !== 'AbortError') {
+            if (state.alphaData.length > 0) {
+                updateStaleBadge(true);
+                showInfoBox(
+                    "Data Lama Dipakai",
+                    "Refresh gagal, jadi sistem memakai data cache terakhir yang masih ada.",
+                    true
+                );
+            } else {
                 if (statusArea) statusArea.style.display = 'none';
-                if (isRateLimitedError(e)) {
-                    showInfoBox("Akses Dibatasi", "Agregator membatasi permintaan Anda. Sistem akan menyegarkan otomatis.", true);
-                } else {
-                    showInfoBox("Kendala API Agregator", "Gagal memuat data Alpha dari DexScreener. Pastikan koneksi stabil.", true);
-                }
+
+                const friendly = getReadableApiError(err);
+                showInfoBox("Kendala API Agregator", friendly, true);
             }
         }
     } finally {

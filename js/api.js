@@ -256,8 +256,9 @@ export async function fetchGMGNTokenAnalysis({ mint, pairAddress }, signal = nul
     return fetchWithCache(`/api/gmgn-token?${q.toString()}`, 45000, signal);
 }
 
-export async function fetchGMGNTrending({ interval = '1m', limit = 50, chain = 'solana', mode = 'trending' } = {}, signal = null) {
-    const q = new URLSearchParams({ interval, limit: String(limit), chain, mode });
+export async function fetchGMGNTrending({ interval = '1m', limit = 50, chain = 'sol', mode = 'trending' } = {}, signal = null) {
+    const normalizedChain = String(chain).toLowerCase() === 'solana' ? 'sol' : String(chain).toLowerCase();
+    const q = new URLSearchParams({ interval, limit: String(limit), chain: normalizedChain, mode });
     return fetchWithCache(`/api/gmgn-trending?${q.toString()}`, interval === '1m' ? 8000 : 20000, signal);
 }
 

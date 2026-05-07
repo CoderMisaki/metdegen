@@ -100,21 +100,75 @@ function getReadableApiError(err) {
     return 'Gagal memuat data dari agregator.';
 }
 
+function extractTrendingTokens(res) {
+    const root = res?.data ?? res;
+    const list =
+        root?.tokens ||
+        root?.list ||
+        root?.items ||
+        root?.rows ||
+        root?.data ||
+        [];
+
+    return Array.isArray(list) ? list : [];
+}
+
+function getTrendingAddress(item) {
+    return item?.mint || item?.address || item?.tokenAddress || item?.baseToken?.address || item?.token_mint || "";
+}
+
 async function toggleGMGNTrench() {
     state.gmgnTrenchMode = !state.gmgnTrenchMode;
-    document.getElementById('btnGMGNTrench').classList.toggle('active', state.gmgnTrenchMode);
+    const btn = document.getElementById('btnGMGNTrench');
+    if (btn) btn.classList.toggle('active', state.gmgnTrenchMode);
 
-    if (!state.gmgnTrenchMode) return applyFiltersAndRender();
+    if (!state.gmgnTrenchMode) {
+        state.alphaData = state.alphaBaseData.map(p => ({ ...p }));
+        showInfoBox("GMGN Trench Off", "Mode trench dimatikan. Menampilkan semua signal Alpha.");
+        applyFiltersAndRender();
+        return;
+    }
 
     if (state.currentView !== 'alpha') switchView('alpha');
+
+    if (state.alphaBaseData.length === 0 && state.alphaData.length === 0) {
+        await fetchAlphaSignals();
+    }
+
     try {
-        const res = await fetchGMGNTrending({ interval: '1m', limit: 80, mode: 'trench' });
-        const trench = Array.isArray(res?.data?.tokens) ? res.data.tokens : (Array.isArray(res?.data) ? res.data : []);
-        const allow = new Set(trench.map(t => t.mint || t.address).filter(Boolean));
-        state.alphaData = state.alphaData.filter(p => allow.has(p.tokenMint) || allow.has(p.address));
+        const res = await fetchGMGNTrending({ interval: '1m', limit: 80, chain: 'sol', mode: 'trench' });
+        const trenchTokens = extractTrendingTokens(res);
+        const allow = new Set(trenchTokens.map(getTrendingAddress).filter(Boolean));
+
+        const source = state.alphaBaseData.length > 0 ? state.alphaBaseData : state.alphaData;
+
+        const filtered = source.filter(p => {
+            const addr = String(p.address || '').toLowerCase();
+            const mint = String(p.tokenMint || '').toLowerCase();
+            return allow.has(p.address) || allow.has(p.tokenMint) || allow.has(addr) || allow.has(mint);
+        });
+
+        state.alphaData = filtered.length > 0 ? filtered : source;
+        showInfoBox(
+            "GMGN Trench Active",
+            filtered.length > 0
+                ? `Mode trench aktif. ${filtered.length} kandidat lolos filter GMGN.`
+                : "Data trench kosong dari GMGN, sistem memakai dataset alpha utama."
+        );
         applyFiltersAndRender();
-    } catch (e) {}
+    } catch (e) {
+        showInfoBox(
+            "GMGN Trench Error",
+            "Gagal memuat trench list dari GMGN. Mode trench dinonaktifkan sementara.",
+            true
+        );
+        state.gmgnTrenchMode = false;
+        if (btn) btn.classList.remove('active');
+        state.alphaData = state.alphaBaseData.map(p => ({ ...p }));
+        applyFiltersAndRender();
+    }
 }
+
 
 function switchView(view) {
     if (state.currentView === view) return;
@@ -209,7 +263,7 @@ async function fetchSearchDirectly(q) {
 
     try {
         const res = await fetchWithCache(`https://api.dexscreener.com/latest/dex/search?q=${q}`, 60000, signal).catch(() => null);
-        if (signal?.aborted) return;
+        if (signal?.aborted || !res) return;
 
         const solPairs = (res?.pairs || []).filter(p => p.chainId === 'solana');
 
@@ -493,7 +547,8 @@ async function fetchAlphaSignals() {
                                      .filter(p => state.pinnedTokens.has(p.address) || p.sniperScore > 0);
 
         if (filteredList.length > 0) {
-            state.alphaData = filteredList;
+            state.alphaBaseData = filteredList.map(p => ({ ...p }));
+            state.alphaData = filteredList.map(p => ({ ...p }));
             updateStaleBadge(false);
         } else if (state.alphaData.length === 0) {
              if (statusArea) statusArea.style.display = 'none';

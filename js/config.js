@@ -15,6 +15,7 @@ export const IGNORED_MINTS = new Set([
 export const state = {
     poolsData: [],        
     alphaData: [],        
+    alphaBaseData: [],
     currentView: 'meteora', 
     searchQuery: "",
     refreshTimer: null,

@@ -56,6 +56,8 @@ export function renderList(dataToRender) {
     const batchRender = dataToRender.slice(0, 30);
     let bestBuyShown = false;
 
+    let html = '';
+
     batchRender.forEach((pool, index) => {
         const isAlpha = pool.isExternal || state.currentView === 'alpha';
         const isPinned = state.pinnedTokens.has(pool.address);
@@ -91,7 +93,7 @@ export function renderList(dataToRender) {
         const rankDisp = isAlpha ? pool.trueRank : pool.rank;
         const rankLbl = isAlpha ? 'GLOB' : 'RANK';
 
-        const html = `
+        html += `
             <div class="pool-item" onclick="openModal('${pool.address}')">
                 <button class="pin-btn pool-item-pin ${isPinned ? 'active' : ''}" onclick="togglePin('${pool.address}', event)" title="Pantau">
                     <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="${isPinned ? 'currentColor' : 'none'}" stroke-linecap="round" stroke-linejoin="round">
@@ -117,8 +119,9 @@ export function renderList(dataToRender) {
                     <div class="metric-col"><div class="metric-label">Trend</div><div class="metric-val ${trColor}">${formatPct(pool.priceChange)}</div></div>
                 </div>
             </div>`;
-        container.insertAdjacentHTML('beforeend', html);
     });
+
+    container.innerHTML = html;
 
     if (state.activeModalData) {
         const updatedPool = dataToRender.find(p => p.address === state.activeModalData.address);
@@ -173,6 +176,9 @@ export function renderAIStrategyBox(pool, rcData, top10pct, gmgnData = null) {
 
 export async function fillModalData(pool) {
     if (!pool) return;
+
+    const modalSession = Date.now();
+    state.modalSession = modalSession;
     const dex = pool.dexData;
     const isAlpha = pool.isExternal || state.currentView === 'alpha';
     const isPinned = state.pinnedTokens.has(pool.address);
@@ -251,6 +257,7 @@ export async function fillModalData(pool) {
         document.getElementById('dlmmLoading').innerText = '(Fetching native data...)';
         
         fetchMeteoraNative(chartAddress).then(mtData => {
+            if (state.modalSession !== modalSession) return;
             document.getElementById('dlmmLoading').innerText = ''; 
             try {
                 const volatility = getVolatilityProfile(pool); 
@@ -316,6 +323,7 @@ export async function fillModalData(pool) {
                 console.error("Meteora Parsing Error:", e);
             }
         }).catch(e => {
+            if (state.modalSession !== modalSession) return;
             document.getElementById('dlmmLoading').innerText = '(Fetch Timeout)';
         });
 
@@ -325,6 +333,7 @@ export async function fillModalData(pool) {
         fetchGMGNTokenAnalysis({ mint, pairAddress: pool.pairAddress || pool.address }),
         fetchGMGNWallet({ mint, limit: 20 })
     ]).then(([tokenRes, walletRes]) => {
+        if (state.modalSession !== modalSession) return;
         let tData = tokenRes.status === 'fulfilled' ? tokenRes.value : {};
         tData = tData?.data?.data || tData?.data || tData;
         let wData = walletRes.status === 'fulfilled' ? walletRes.value : {};
@@ -343,6 +352,7 @@ export async function fillModalData(pool) {
         safeSetText('gmgnDev', devStatus, 'metric-small text-primary');
         safeSetText('gmgnSmart', winRateVal != null ? `WR ${(Number(winRateVal) * 100).toFixed(1)}% | P&L ${formatMoney(Number(pnlVal ?? 0))}` : 'Data Kosong', (Number(winRateVal) >= 0.6 && Number(pnlVal) > 0) ? 'metric-small text-green' : 'metric-small text-secondary');
     }).catch(() => {
+        if (state.modalSession !== modalSession) return;
         safeSetText('gmgnRat', 'Unavailable', 'metric-small text-secondary');
     });
     }
@@ -356,6 +366,7 @@ export async function fillModalData(pool) {
     renderAIStrategyBox(pool, null, dummyTop10);
 
     fetchRugCheckSecure(pool.tokenMint).then(rcData => {
+        if (state.modalSession !== modalSession) return;
         if(rcData) {
             let finalTop10 = 0;
             
@@ -399,6 +410,7 @@ export async function fillModalData(pool) {
             safeSetText('beFreeze', 'Gagal Audit', 'metric-small text-red');
         }
     }).catch(e => {
+        if (state.modalSession !== modalSession) return;
         safeSetText('beHolders', 'Timeout', 'metric-small text-red');
     });
 
@@ -441,4 +453,5 @@ export function closeModal() {
     document.getElementById('analysisModal').classList.remove('active'); 
     state.selectedPoolKey = null; 
     state.activeModalData = null;
+    state.modalSession = 0;
 }

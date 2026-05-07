@@ -34,6 +34,29 @@ function safeJsonParse(text, url) {
     }
 }
 
+function cleanupSessionStorage(prefixes = ['mt_native_', 'rc_sec_'], maxEntries = 100) {
+    try {
+        const now = Date.now();
+        const entries = [];
+
+        for (let i = 0; i < sessionStorage.length; i++) {
+            const key = sessionStorage.key(i);
+            if (!key || !prefixes.some(p => key.startsWith(p))) continue;
+            const raw = sessionStorage.getItem(key);
+            let parsed = null;
+            try { parsed = raw ? JSON.parse(raw) : null; } catch {}
+            const time = Number(parsed?.time || 0);
+            entries.push({ key, time });
+            if (!time || now - time > 300000) sessionStorage.removeItem(key);
+        }
+
+        const fresh = entries.filter(e => e.time > 0).sort((a, b) => b.time - a.time);
+        if (fresh.length > maxEntries) {
+            fresh.slice(maxEntries).forEach(e => sessionStorage.removeItem(e.key));
+        }
+    } catch {}
+}
+
 function cacheSet(map, key, value, maxSize = MAX_CACHE) {
     if (map.size >= maxSize) {
         const firstKey = map.keys().next().value;
@@ -145,6 +168,7 @@ export async function fetchWithCache(url, ttl = 60000, signal = null) {
 export async function fetchMeteoraNative(pairAddress) {
     if (!pairAddress) return null;
 
+    cleanupSessionStorage();
     const cacheKey = 'mt_native_' + pairAddress;
     const cached = sessionStorage.getItem(cacheKey);
     if (cached) {
@@ -174,6 +198,7 @@ export async function fetchMeteoraNative(pairAddress) {
 export async function fetchRugCheckSecure(mint) {
     if (!mint || !isValidSolAddress(mint)) return null;
 
+    cleanupSessionStorage();
     const cacheKey = 'rc_sec_' + mint;
     const cached = sessionStorage.getItem(cacheKey);
     if (cached) {

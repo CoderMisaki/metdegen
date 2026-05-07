@@ -272,7 +272,7 @@ async function loadPools() {
 
         for(let i=0; i < uniqueMints.length; i+=30) {
             const chunk = uniqueMints.slice(i, i+30).join(',');
-            const res = await fetchWithCache(`https://api.dexscreener.com/latest/dex/tokens/${chunk}`, 30000, signal).catch(()=>null);
+            const res = await fetchWithCache(`https://api.dexscreener.com/latest/dex/tokens/${chunk}`, 30000, signal);
             if (signal?.aborted) return;
             
             if(res && res.pairs) {
@@ -400,7 +400,7 @@ async function fetchAlphaSignals() {
 
         for(let i=0; i < uniqueMints.length; i+=30) {
             const chunk = uniqueMints.slice(i, i+30).join(',');
-            const res = await fetchWithCache(`https://api.dexscreener.com/latest/dex/tokens/${chunk}`, 30000, signal).catch(()=>null);
+            const res = await fetchWithCache(`https://api.dexscreener.com/latest/dex/tokens/${chunk}`, 30000, signal);
             if (signal?.aborted) return;
             if(res && res.pairs) {
                  allPairs.push(...res.pairs.filter(x => x.chainId === 'solana' && !IGNORED_MINTS.has(x.baseToken?.address)));

@@ -1,6 +1,6 @@
 import { state, MAX_CACHE, IGNORED_MINTS } from './config.js';
 import { isValidSolAddress, normalizeAddressInput } from './utils.js';
-import { fetchWithCache, fetchPinnedTokens, fetchGMGNTrending } from './api.js';
+import { fetchWithCache, fetchPinnedTokens, fetchGMGNTrending, normalizeGMGNTrending } from './api.js';
 import { getDLMMInfoFromLabels, computeAdvancedMetrics, computeAlphaScore } from './engine.js';
 import { updateStaleBadge, showInfoBox, hideInfoBox, showToast, renderList, fillModalData, openModal, closeModal } from './ui.js';
 
@@ -100,72 +100,126 @@ function getReadableApiError(err) {
     return 'Gagal memuat data dari agregator.';
 }
 
-function extractTrendingTokens(res) {
-    const root = res?.data ?? res;
-    const list =
-        root?.tokens ||
-        root?.list ||
-        root?.items ||
-        root?.rows ||
-        root?.data ||
-        [];
-
-    return Array.isArray(list) ? list : [];
+function getTrendingAddress(item) {
+    return String(
+        item?.mint ||
+        item?.address ||
+        item?.tokenAddress ||
+        item?.wallet ||
+        item?.owner ||
+        item?.baseToken?.address ||
+        item?.token_mint ||
+        ''
+    ).trim();
 }
 
-function getTrendingAddress(item) {
-    return item?.mint || item?.address || item?.tokenAddress || item?.baseToken?.address || item?.token_mint || "";
+function buildAlphaFromDexPair(pair, index) {
+    return {
+        name: `${pair.baseToken?.symbol || 'UN'}/${pair.quoteToken?.symbol || 'KN'}`,
+        address: pair.pairAddress || '',
+        tokenMint: pair.baseToken?.address || '',
+        altMint: pair.quoteToken?.address || '',
+        feePct: null,
+        maxFeePct: null,
+        currentFeePct: null,
+        binStep: null,
+        isDLMM: false,
+        vol24h: Number(pair.volume?.h24 || 0),
+        fees24h: null,
+        tvl: Number(pair.liquidity?.usd || 0),
+        price: Number(pair.priceUsd || 0),
+        dexData: pair,
+        logoUrl: pair.info?.imageUrl || pair.baseToken?.logoURI || `https://api.dicebear.com/9.x/identicon/svg?seed=${pair.baseToken?.address || index}&backgroundColor=1e1e1e`,
+        priceChange: getBestPriceChange(pair),
+        dexPrice: Number(pair.priceUsd || 0),
+        pairAddress: pair.pairAddress || '',
+        ageHours: pair.pairCreatedAt ? (Date.now() - pair.pairCreatedAt) / 3600000 : null,
+        isExternal: true,
+        rank: 0,
+        trueRank: index + 1
+    };
 }
 
 async function toggleGMGNTrench() {
     state.gmgnTrenchMode = !state.gmgnTrenchMode;
+
     const btn = document.getElementById('btnGMGNTrench');
     if (btn) btn.classList.toggle('active', state.gmgnTrenchMode);
 
     if (!state.gmgnTrenchMode) {
         state.alphaData = state.alphaBaseData.map(p => ({ ...p }));
-        showInfoBox("GMGN Trench Off", "Mode trench dimatikan. Menampilkan semua signal Alpha.");
+        showInfoBox('GMGN Trench Off', 'Mode trench dimatikan. Menampilkan semua signal Alpha.');
         applyFiltersAndRender();
         return;
     }
 
     if (state.currentView !== 'alpha') switchView('alpha');
 
-    if (state.alphaBaseData.length === 0 && state.alphaData.length === 0) {
-        await fetchAlphaSignals();
-    }
+    const statusArea = document.getElementById('statusArea');
+    statusArea.style.display = 'block';
+    statusArea.innerText = 'Mengambil GMGN trenches lalu enrichment DexScreener...';
+
+    if (state.ctrlAlpha) state.ctrlAlpha.abort();
+    state.ctrlAlpha = new AbortController();
+    const signal = state.ctrlAlpha.signal;
 
     try {
-        const res = await fetchGMGNTrending({ interval: '1m', limit: 80, chain: 'sol', mode: 'trench' });
-        const trenchTokens = extractTrendingTokens(res);
-        const allow = new Set(trenchTokens.map(getTrendingAddress).filter(Boolean));
+        const trenchRes = await fetchGMGNTrending({ mode: 'trench', limit: 80 }, signal);
+        if (signal?.aborted) return;
 
-        const source = state.alphaBaseData.length > 0 ? state.alphaBaseData : state.alphaData;
+        const trenchList = normalizeGMGNTrending(trenchRes);
+        const mints = [...new Set(trenchList.map(getTrendingAddress).filter(Boolean))];
 
-        const filtered = source.filter(p => {
-            const addr = String(p.address || '').toLowerCase();
-            const mint = String(p.tokenMint || '').toLowerCase();
-            return allow.has(p.address) || allow.has(p.tokenMint) || allow.has(addr) || allow.has(mint);
-        });
+        if (mints.length === 0) {
+            throw new Error('GMGN trench list empty');
+        }
 
-        state.alphaData = filtered.length > 0 ? filtered : source;
-        showInfoBox(
-            "GMGN Trench Active",
-            filtered.length > 0
-                ? `Mode trench aktif. ${filtered.length} kandidat lolos filter GMGN.`
-                : "Data trench kosong dari GMGN, sistem memakai dataset alpha utama."
-        );
+        const pairs = [];
+        for (let i = 0; i < mints.length; i += 30) {
+            const chunk = mints.slice(i, i + 30).join(',');
+            const dexRes = await fetchWithCache(
+                `https://api.dexscreener.com/latest/dex/tokens/${chunk}`,
+                30000,
+                signal
+            ).catch(() => null);
+
+            if (signal?.aborted) return;
+
+            if (dexRes?.pairs && Array.isArray(dexRes.pairs)) {
+                pairs.push(...dexRes.pairs.filter(p => p.chainId === 'solana'));
+            }
+        }
+
+        const uniq = Array.from(new Map(pairs.map(p => [p.pairAddress, p])).values());
+
+        const built = uniq
+            .map((pair, i) => buildAlphaFromDexPair(pair, i))
+            .filter(p => p.address);
+
+        if (built.length === 0) {
+            throw new Error('GMGN trenches found, but DexScreener enrichment returned empty');
+        }
+
+        const totalVol = built.reduce((sum, p) => sum + (p.vol24h || 0), 0);
+        const avgVol = built.length > 0 ? totalVol / built.length : 0;
+
+        built.forEach(p => p.sniperScore = computeAlphaScore(p, avgVol));
+        built.sort((a, b) => (b.sniperScore || 0) - (a.sniperScore || 0));
+
+        state.alphaBaseData = built.map(p => ({ ...p }));
+        state.alphaData = built.map(p => ({ ...p }));
+
+        showInfoBox('GMGN Trench Active', `Mode trench aktif. ${built.length} token berhasil dibangun dari GMGN trenches.`, false);
+
         applyFiltersAndRender();
     } catch (e) {
-        showInfoBox(
-            "GMGN Trench Error",
-            "Gagal memuat trench list dari GMGN. Mode trench dinonaktifkan sementara.",
-            true
-        );
+        showInfoBox('GMGN Trench Error', `Gagal memuat trench GMGN: ${e.message}`, true);
         state.gmgnTrenchMode = false;
         if (btn) btn.classList.remove('active');
         state.alphaData = state.alphaBaseData.map(p => ({ ...p }));
         applyFiltersAndRender();
+    } finally {
+        statusArea.style.display = 'none';
     }
 }
 

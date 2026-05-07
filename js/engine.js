@@ -2,19 +2,54 @@ import { state } from './config.js';
 import { formatMoney } from './utils.js';
 
 function extractGMGNMetrics(gmgn = {}) {
-    let d = gmgn || {};
-    d = d.data?.data || d.data || d;
-    let smartMoney = d.smartMoney || d;
-    smartMoney = smartMoney.data?.data || smartMoney.data || smartMoney;
+    const root = gmgn?.data?.data ?? gmgn?.data ?? gmgn ?? {};
+    const smartMoney =
+        root.smartMoney?.data?.data ??
+        root.smartMoney?.data ??
+        root.smartMoney ??
+        root.smart_money ??
+        {};
 
-    const ratTraderRatio = Number(d.rat_trader_amount_percentage ?? d.rat_ratio ?? 0);
-    const bundleRatio = Number(d.bluechip_owner_percentage ?? d.bundle_ratio ?? 0);
-    const devStatus = d.is_show_alert === true ? '🚨 ALERT' : '✅ CLEAN';
-    const smartMoneyWinRate = Number(smartMoney.average_win_rate ?? smartMoney.win_rate ?? 0);
-    const smartMoneyPnL = Number(smartMoney.total_pnl ?? smartMoney.pnl ?? 0);
-    const smartMoneyAccumulation = Number(smartMoney.net_buy_amount ?? smartMoney.net_buy ?? 0);
+    const ratTraderRatio = Number(
+        root.rat_trader_amount_percentage ??
+        root.rat_ratio ??
+        root.ratTraderRatio ??
+        0
+    );
+
+    const bundleRatio = Number(
+        root.bluechip_owner_percentage ??
+        root.bundle_ratio ??
+        root.bundleRatio ??
+        0
+    );
+
+    const devStatus = root.is_show_alert === true ? '🚨 ALERT' : '✅ CLEAN';
+
+    const smartMoneyWinRate = Number(
+        smartMoney.average_win_rate ??
+        smartMoney.win_rate ??
+        smartMoney.winRate ??
+        0
+    );
+
+    const smartMoneyPnL = Number(
+        smartMoney.total_pnl ??
+        smartMoney.pnl ??
+        smartMoney.realized_pnl ??
+        0
+    );
+
+    const smartMoneyAccumulation = Number(
+        smartMoney.net_buy_amount ??
+        smartMoney.net_buy ??
+        smartMoney.netBuy ??
+        0
+    );
+
     return { ratTraderRatio, bundleRatio, devStatus, smartMoneyWinRate, smartMoneyPnL, smartMoneyAccumulation };
 }
+
 
 export function getDLMMInfoFromLabels(labels) {
     let binStep = null;

@@ -1,7 +1,7 @@
 import { state } from './config.js';
 import { safeExec, escapeHTML, formatAddress, formatMoney, formatPct, formatNum, formatAge } from './utils.js';
 import { computeAdvancedMetrics, getVolatilityProfile, buildStrategy } from './engine.js';
-import { fetchMeteoraNative, fetchRugCheckSecure, fetchGMGNTokenAnalysis, fetchGMGNWallet, normalizeGMGNToken, normalizeGMGNWallet, createRequestManager } from './api.js';
+import { fetchMeteoraNative, fetchRugCheckSecure, fetchGMGNTokenAnalysis, normalizeGMGNToken, createRequestManager } from './api.js';
 
 export function updateStaleBadge(isStale) {
     document.getElementById('staleBadge').style.display = isStale ? 'inline-block' : 'none';
@@ -177,14 +177,6 @@ export function renderAIStrategyBox(pool, rcData, top10pct, gmgnData = null) {
 
 const rm = createRequestManager({ concurrency: 2 });
 
-function unwrapGMGN(payload) {
-    let d = payload?.data ?? payload;
-    if (d && typeof d === 'object') {
-        d = d.data ?? d.result ?? d.items?.[0] ?? d;
-    }
-    return d || {};
-}
-
 export async function fillModalData(pool) {
     if (!pool) return;
 
@@ -341,52 +333,56 @@ export async function fillModalData(pool) {
 
     const mint = pool.tokenMint || pool.altMint;
     const modalSignal = rm.abortPreviousModal();
-    rm.debounce('modal_gmgn', () => rm.enqueue(() => Promise.allSettled([
-        fetchGMGNTokenAnalysis({ mint, pairAddress: pool.pairAddress || pool.address }, modalSignal),
-        fetchGMGNWallet({ wallet: pool.address }, modalSignal)
-    ])), 150).then(([tokenRes, walletRes]) => {
-        if (state.modalSession !== modalSession) return;
-        const tokenRaw = tokenRes.status === 'fulfilled' ? tokenRes.value : null;
-        const walletRaw = walletRes.status === 'fulfilled' ? walletRes.value : null;
+    rm.debounce('modal_gmgn', () => rm.enqueue(() =>
+      fetchGMGNTokenAnalysis(
+        { mint, pairAddress: pool.pairAddress || pool.address },
+        modalSignal
+      )
+    ), 150).then((tokenRaw) => {
+      if (state.modalSession !== modalSession) return;
 
-        const tData = normalizeGMGNToken(tokenRaw);
-        const wData = normalizeGMGNWallet(walletRaw);
+      const tData = normalizeGMGNToken(tokenRaw);
+      pool.gmgnData = tData;
 
-        pool.gmgnData = { ...tData, smartMoney: wData };
+      const smart = tData.smartMoney || tData.smart_money || tData.smartmoney || {};
+      const smartProfit = smart.profit || smart.profit_stat || smart;
 
-        const ratVal = tData.rat_trader_amount_percentage ?? tData.rat_ratio ?? tData.ratTraderRatio ?? null;
-        const bundleVal = tData.bluechip_owner_percentage ?? tData.bundle_ratio ?? tData.bundleRatio ?? null;
-        const devStatus = tData.is_show_alert === true ? '🚨 ALERT' : '✅ CLEAN';
-        const walletProfit = wData?.profit || {};
-        const winRateVal = walletProfit.average_win_rate ?? walletProfit.win_rate ?? null;
-        const pnlVal = walletProfit.total_pnl ?? walletProfit.pnl ?? null;
+      const ratVal = tData.rat_trader_amount_percentage ?? tData.rat_ratio ?? tData.ratTraderRatio ?? null;
+      const bundleVal = tData.bluechip_owner_percentage ?? tData.bundle_ratio ?? tData.bundleRatio ?? null;
+      const devStatus = tData.is_show_alert === true ? '🚨 ALERT' : '✅ CLEAN';
 
-        safeSetText(
-          'gmgnRat',
-          ratVal != null ? `${(Number(ratVal) * 100).toFixed(1)}%` : 'Unavailable',
-          ratVal != null && Number(ratVal) >= 0.25 ? 'metric-small text-red' : 'metric-small text-green'
-        );
+      const winRateVal = smartProfit.average_win_rate ?? smartProfit.win_rate ?? smartProfit.winRate ?? null;
+      const pnlVal = smartProfit.total_pnl ?? smartProfit.pnl ?? smartProfit.realized_pnl ?? null;
 
-        safeSetText(
-          'gmgnBundle',
-          bundleVal != null ? `${(Number(bundleVal) * 100).toFixed(1)}%` : 'Unavailable',
-          bundleVal != null && Number(bundleVal) >= 0.25 ? 'metric-small text-red' : 'metric-small text-green'
-        );
+      safeSetText(
+        'gmgnRat',
+        ratVal != null ? `${(Number(ratVal) * 100).toFixed(1)}%` : 'Unavailable',
+        ratVal != null && Number(ratVal) >= 0.25 ? 'metric-small text-red' : 'metric-small text-green'
+      );
 
-        safeSetText('gmgnDev', devStatus, 'metric-small text-primary');
+      safeSetText(
+        'gmgnBundle',
+        bundleVal != null ? `${(Number(bundleVal) * 100).toFixed(1)}%` : 'Unavailable',
+        bundleVal != null && Number(bundleVal) >= 0.25 ? 'metric-small text-red' : 'metric-small text-green'
+      );
 
-        safeSetText(
-          'gmgnSmart',
-          winRateVal != null
-            ? `WR ${(Number(winRateVal) * 100).toFixed(1)}% | P&L ${formatMoney(Number(pnlVal ?? 0))}`
-            : 'Unavailable',
-          (winRateVal != null && Number(winRateVal) >= 0.6 && Number(pnlVal ?? 0) > 0)
-            ? 'metric-small text-green'
-            : 'metric-small text-secondary'
-        );
+      safeSetText('gmgnDev', devStatus, 'metric-small text-primary');
+
+      safeSetText(
+        'gmgnSmart',
+        winRateVal != null
+          ? `WR ${(Number(winRateVal) * 100).toFixed(1)}% | P&L ${formatMoney(Number(pnlVal ?? 0))}`
+          : 'Unavailable',
+        (winRateVal != null && Number(winRateVal) >= 0.6 && Number(pnlVal ?? 0) > 0)
+          ? 'metric-small text-green'
+          : 'metric-small text-secondary'
+      );
     }).catch(() => {
-        if (state.modalSession !== modalSession) return;
-        safeSetText('gmgnRat', 'Unavailable', 'metric-small text-secondary');
+      if (state.modalSession !== modalSession) return;
+      safeSetText('gmgnRat', 'Unavailable', 'metric-small text-secondary');
+      safeSetText('gmgnBundle', 'Unavailable', 'metric-small text-secondary');
+      safeSetText('gmgnDev', 'Unavailable', 'metric-small text-secondary');
+      safeSetText('gmgnSmart', 'Unavailable', 'metric-small text-secondary');
     });
     }
 

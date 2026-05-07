@@ -249,6 +249,34 @@ export async function fetchPinnedTokens(signal) {
     return fetchedPairs;
 }
 
+export function normalizeGMGNTrending(payload = {}) {
+    const root = payload?.data ?? payload ?? {};
+    const list =
+        root.tokens ||
+        root.list ||
+        root.items ||
+        root.rows ||
+        root.trends ||
+        root.data ||
+        root.result ||
+        [];
+    return Array.isArray(list) ? list : [];
+}
+
+export function normalizeGMGNToken(payload = {}) {
+    const root = payload?.data ?? payload ?? {};
+    return root.data || root.result || root.token || root || {};
+}
+
+export function normalizeGMGNWallet(payload = {}) {
+    const root = payload?.data ?? payload ?? {};
+    const base = root.data || root.result || root;
+    return {
+        profit: base.profit || base.profit_stat || base.profitStat || {},
+        activity: base.activity || base.wallet_activity || base.rows || []
+    };
+}
+
 export async function fetchGMGNTokenAnalysis({ mint, pairAddress }, signal = null) {
     const q = new URLSearchParams();
     if (mint) q.set('mint', mint);
@@ -256,36 +284,17 @@ export async function fetchGMGNTokenAnalysis({ mint, pairAddress }, signal = nul
     return fetchWithCache(`/api/gmgn-token?${q.toString()}`, 45000, signal);
 }
 
-export async function fetchGMGNTrending({ interval = '1m', limit = 50, chain = 'sol', mode = 'trending' } = {}, signal = null) {
-    const normalizedChain = String(chain).toLowerCase() === 'solana' ? 'sol' : String(chain).toLowerCase();
-    const q = new URLSearchParams({ interval, limit: String(limit), chain: normalizedChain, mode });
-    return fetchWithCache(`/api/gmgn-trending?${q.toString()}`, interval === '1m' ? 8000 : 20000, signal);
+export async function fetchGMGNTrending({ interval = '1m', limit = 50, mode = 'trending' } = {}, signal = null) {
+    const q = new URLSearchParams({ interval, limit: String(limit), mode });
+    return fetchWithCache(`/api/gmgn-trending?${q.toString()}`, mode === 'trench' ? 45000 : 8000, signal);
 }
 
 export async function fetchGMGNWallet({ wallet }, signal = null) {
-    if (!wallet || !isValidSolAddress(wallet)) return null;
-    const q = new URLSearchParams();
-    q.set('wallet', wallet);
+    if (!wallet) return null;
+    const q = new URLSearchParams({ wallet });
     return fetchWithCache(`/api/gmgn-wallet?${q.toString()}`, 20000, signal);
 }
 
-
-export function normalizeGMGNTrending(payload = {}) {
-    const root = payload?.data || payload || {};
-    const list = root.tokens || root.list || root.items || root.rows || root.data || [];
-    return Array.isArray(list) ? list : [];
-}
-
-export function normalizeGMGNToken(payload = {}) {
-    const d = payload?.data || payload || {};
-    return d?.data || d?.result || d?.token || d || {};
-}
-
-export function normalizeGMGNWallet(payload = {}) {
-    const d = payload?.data || payload || {};
-    const base = d?.data || d;
-    return { profit: base?.profit || base?.profit_stat || base?.profitStat || base, activity: base?.activity || base?.wallet_activity || [] };
-}
 
 export function normalizeDexPair(pair = {}) {
     return {

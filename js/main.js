@@ -1,8 +1,8 @@
-import { state, MAX_CACHE } from './config.js?v=4';
-import { isValidSolAddress } from './utils.js?v=4';
-import { fetchWithCache, fetchPinnedTokens, fetchGMGNTrending } from './api.js?v=4';
-import { getDLMMInfoFromLabels, computeAdvancedMetrics, computeAlphaScore } from './engine.js?v=4';
-import { updateStaleBadge, showInfoBox, hideInfoBox, showToast, renderList, fillModalData, openModal, closeModal } from './ui.js?v=4';
+import { state, MAX_CACHE } from './config.js';
+import { isValidSolAddress } from './utils.js';
+import { fetchWithCache, fetchPinnedTokens, fetchGMGNTrending } from './api.js';
+import { getDLMMInfoFromLabels, computeAdvancedMetrics, computeAlphaScore } from './engine.js';
+import { updateStaleBadge, showInfoBox, hideInfoBox, showToast, renderList, fillModalData, openModal, closeModal } from './ui.js';
 
 // Global Error Tracker
 (function setupGlobalErrorTracker() {

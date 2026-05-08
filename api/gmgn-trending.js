@@ -20,7 +20,16 @@ module.exports = async function handler(req, res) {
           'filters[]': ['renounced', 'frozen']
         };
 
-    const data = await gmgnRequest(path, query);
+    const data = isTrench
+      ? await gmgnRequest(
+          path,
+          query,
+          {
+            method: 'POST',
+            body: {}
+          }
+        )
+      : await gmgnRequest(path, query);
 
     return json(res, 200, {
       ok: true,

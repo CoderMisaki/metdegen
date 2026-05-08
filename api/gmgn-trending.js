@@ -21,14 +21,7 @@ module.exports = async function handler(req, res) {
         };
 
     const data = isTrench
-      ? await gmgnRequest(
-          path,
-          query,
-          {
-            method: 'POST',
-            body: {}
-          }
-        )
+      ? await gmgnRequest(path, query, { method: 'POST', body: {} })
       : await gmgnRequest(path, query);
 
     return json(res, 200, {
@@ -38,6 +31,10 @@ module.exports = async function handler(req, res) {
       data
     });
   } catch (error) {
-    return json(res, 500, { ok: false, error: error.message });
+    return json(res, error.code === 'GMGN_BLOCKED' ? 502 : 500, {
+      ok: false,
+      code: error.code || 'GMGN_ERROR',
+      error: error.message
+    });
   }
 };

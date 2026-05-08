@@ -16,6 +16,10 @@ module.exports = async function handler(req, res) {
 
     return json(res, 200, { ok: true, source: 'gmgn', data });
   } catch (error) {
-    return json(res, 500, { ok: false, error: error.message });
+    return json(res, error.code === 'GMGN_BLOCKED' ? 502 : 500, {
+      ok: false,
+      code: error.code || 'GMGN_ERROR',
+      error: error.message
+    });
   }
 };

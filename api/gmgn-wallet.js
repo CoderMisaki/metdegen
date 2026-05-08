@@ -18,6 +18,10 @@ module.exports = async function handler(req, res) {
       data: { profit, activity }
     });
   } catch (error) {
-    return json(res, 500, { ok: false, error: error.message });
+    return json(res, error.code === 'GMGN_BLOCKED' ? 502 : 500, {
+      ok: false,
+      code: error.code || 'GMGN_ERROR',
+      error: error.message
+    });
   }
 };

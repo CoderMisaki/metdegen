@@ -7,14 +7,20 @@ function json(res, status, payload) {
 
 function buildHeaders() {
   return {
-    Accept: 'application/json, text/plain, */*',
-    'Accept-Language': 'en-US,en;q=0.9,id;q=0.8',
+    'Accept': 'application/json, text/plain, */*',
+    // Gunakan bahasa yang sama dengan browser Mises kamu
+    'Accept-Language': 'id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7',
     'Cache-Control': 'no-cache',
-    Pragma: 'no-cache',
-    Referer: 'https://gmgn.ai/',
-    Origin: 'https://gmgn.ai',
-    'User-Agent':
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36'
+    'Pragma': 'no-cache',
+    'Referer': 'https://gmgn.ai/?chain=sol',
+    'Origin': 'https://gmgn.ai',
+    
+    // WAJIB: User-Agent harus sama persis dengan browser saat kamu ambil cookie
+    'User-Agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36',
+    
+    // Mengambil data rahasia dari Environment Variables Vercel
+    'Authorization': process.env.GMGN_AUTH,
+    'Cookie': process.env.GMGN_COOKIE
   };
 }
 
@@ -37,6 +43,7 @@ async function gmgnRequest(path, query = {}) {
   const text = await res.text();
 
   if (!res.ok) {
+    // Kalau kena 403 lagi, berarti cookie/auth sudah expired
     throw new Error(`GMGN upstream ${res.status}: ${text.slice(0, 240)}`);
   }
 

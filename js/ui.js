@@ -243,9 +243,9 @@ export async function fillModalData(pool) {
         if(rcData) {
             let finalTop10 = 0;
             
-            // PERBAIKAN: Menghitung akumulasi Top 10 Holder 100% akurat dari raw data
+            // KODE BARU: HANYA MENGGUNAKAN RAW DATA DOMPET, MENGABAIKAN MESIN RISIKO RUGCHECK
             if (rcData.topHolders && Array.isArray(rcData.topHolders)) {
-                // Ambil 10 dompet teratas dan totalkan persentasenya persis seperti web RugCheck
+                // Langsung jumlahkan 10 urutan teratas tanpa filter apapun, persis tabel UI
                 finalTop10 = rcData.topHolders.slice(0, 10).reduce((acc, curr) => acc + (curr.pct || 0), 0) / 100;
             }
 
@@ -294,8 +294,6 @@ export async function fillModalData(pool) {
     // Buttons
     document.getElementById('mCopyBtn').onclick = () => copyText(displayCA, 'CA');
     document.getElementById('mDexLinkBtn').href = `https://dexscreener.com/solana/${chartAddress}`;
-    
-    // PERBAIKAN: Mengaktifkan kembali tombol RugCheck yang hilang
     const btnRug = document.getElementById('mRugCheckBtn');
     if (btnRug) btnRug.href = `https://rugcheck.xyz/tokens/${displayCA}`;
 

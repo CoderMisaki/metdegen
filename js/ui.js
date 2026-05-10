@@ -150,7 +150,6 @@ export async function fillModalData(pool) {
     const elAlpha = document.getElementById('alphaMetrics');
     const elMeteora = document.getElementById('meteoraMetrics');
 
-    // MENGHITUNG METRIK LANJUTAN DARI ENGINE KITA
     const mData = computeAdvancedMetrics(pool);
 
     if (isAlpha) {
@@ -165,7 +164,6 @@ export async function fillModalData(pool) {
         safeSetText('mAgeAlpha', formatAge(pool.ageHours));
         safeSetText('mChangeAlpha', formatPct(pool.priceChange));
 
-        // MENGEMBALIKAN LOGIC SIGNAL ALPHA YANG HILANG
         const buys1H = dex?.txns?.h1?.buys;
         const sells1H = dex?.txns?.h1?.sells;
         const buys24H = dex?.txns?.h24?.buys;
@@ -196,23 +194,21 @@ export async function fillModalData(pool) {
         if(elMeteora) elMeteora.style.display = 'block';
         document.getElementById('dlmmLoading').innerText = '(Fetching real-time metrics...)';
         
-        // AMBIL DATA REAL-TIME METEORA ADVANCED METRICS
         fetchMeteoraAdvancedMetrics(chartAddress).then(res => {
             if (state.modalSession !== modalSession) return;
             document.getElementById('dlmmLoading').innerText = '';
             
             const mtData = (res && res.data && res.data.length > 0) ? res.data[0] : null;
             if (mtData) {
-                // PENYESUAIAN KUNCI JSON METEORA YANG BENAR
                 const activeTvl = Number(mtData.active_tvl || 0);
                 const fee24h = Number(mtData.fee || 0);
                 const vol24h = Number(mtData.volume || 0);
                 const tvl = Number(mtData.tvl || pool.tvl || 0);
                 
                 const binStep = Number(mtData.dlmm_params?.bin_step || pool.binStep || 0);
-                const volatility = Number(mtData.volatility || 0); // TANPA DIKALI 100!
+                const volatility = Number(mtData.volatility || 0);
                 
-                const baseFee = pool.feePct || 0.3; // Default 0.3 jika tidak ada info
+                const baseFee = pool.feePct || 0.3; 
                 const maxFee = pool.maxFeePct || baseFee * 1.5;
 
                 safeSetText('dlmmAge', formatAge(pool.ageHours));
@@ -237,24 +233,71 @@ export async function fillModalData(pool) {
         });
     }
 
-    // Security & GMGN Analytics
-    const mint = pool.tokenMint || pool.altMint;
+    // ==== MENGEMBALIKAN BLOK RUGCHECK SECARA UTUH ====
+    safeSetText('beHolders', 'Mengaudit...', 'metric-small text-secondary');
+    safeSetText('beCreator', 'Mengaudit...', 'metric-small text-secondary');
+    safeSetText('beMint', 'Mengaudit...', 'metric-small text-secondary');
+    safeSetText('beFreeze', 'Mengaudit...', 'metric-small text-secondary');
+
+    fetchRugCheckSecure(pool.tokenMint).then(rcData => {
+        if (state.modalSession !== modalSession) return;
+        if(rcData) {
+            let finalTop10 = 0;
+            if (rcData.risks && Array.isArray(rcData.risks)) {
+                rcData.risks.forEach(r => {
+                    if (r.name.toLowerCase().includes('top 10') || r.description.toLowerCase().includes('top 10')) {
+                        const match = r.description.match(/(\d+(\.\d+)?)%/);
+                        if (match) finalTop10 = parseFloat(match[1]) / 100;
+                    }
+                });
+            }
+            if (finalTop10 === 0 && rcData.topHolders && Array.isArray(rcData.topHolders)) {
+                const cleanHolders = rcData.topHolders.filter(h => h.pct < 50); 
+                finalTop10 = cleanHolders.slice(0, 10).reduce((acc, curr) => acc + (curr.pct || 0), 0) / 100;
+            }
+
+            let creatorPct = 0;
+            if (rcData.risks && Array.isArray(rcData.risks)) {
+                rcData.risks.forEach(r => {
+                    if (r.name.toLowerCase().includes('creator') || r.description.toLowerCase().includes('creator')) {
+                        const match = r.description.match(/(\d+(\.\d+)?)%/);
+                        if (match) creatorPct = parseFloat(match[1]) / 100;
+                    }
+                });
+            }
+
+            const isMint = rcData.token?.mintAuthority !== null;
+            const isFreeze = rcData.token?.freezeAuthority !== null;
+
+            safeSetText('beHolders', finalTop10 > 0 ? (finalTop10 * 100).toFixed(1) + '%' : 'Aman ✅', finalTop10 > 0.25 ? 'metric-small text-red' : (finalTop10 > 0.15 ? 'metric-small text-orange' : 'metric-small text-green'));
+            safeSetText('beCreator', creatorPct > 0 ? (creatorPct * 100).toFixed(1) + '%' : 'Aman ✅', creatorPct > 0.1 ? 'metric-small text-red' : 'metric-small text-green');
+            safeSetText('beMint', isMint ? "Ya 🚨" : "Tidak ✅", isMint ? "metric-small text-red" : "metric-small text-green");
+            safeSetText('beFreeze', isFreeze ? "Ya 🚨" : "Tidak ✅", isFreeze ? "metric-small text-red" : "metric-small text-green");
+
+            renderAIStrategyBox(pool, rcData, finalTop10);
+        } else {
+            safeSetText('beHolders', 'Gagal Audit', 'metric-small text-red');
+            safeSetText('beCreator', 'Gagal Audit', 'metric-small text-red');
+            safeSetText('beMint', 'Gagal Audit', 'metric-small text-red');
+            safeSetText('beFreeze', 'Gagal Audit', 'metric-small text-red');
+        }
+    }).catch(e => {
+        if (state.modalSession !== modalSession) return;
+        safeSetText('beHolders', 'Timeout', 'metric-small text-red');
+        safeSetText('beCreator', 'Timeout', 'metric-small text-red');
+        safeSetText('beMint', 'Timeout', 'metric-small text-red');
+        safeSetText('beFreeze', 'Timeout', 'metric-small text-red');
+    });
+    // ===============================================
+
+    // GMGN Analytics
     const modalSignal = rm.abortPreviousModal();
-    rm.enqueue(() => fetchGMGNTokenAnalysis({ mint, pairAddress: chartAddress }, modalSignal)).then(tokenRaw => {
+    rm.enqueue(() => fetchGMGNTokenAnalysis({ mint: pool.tokenMint || pool.altMint, pairAddress: chartAddress }, modalSignal)).then(tokenRaw => {
         if (state.modalSession !== modalSession) return;
         const tData = normalizeGMGNToken(tokenRaw);
         safeSetText('gmgnRat', tData.rat_ratio ? (tData.rat_ratio*100).toFixed(1)+'%' : '—');
         safeSetText('gmgnDev', tData.is_show_alert ? '🚨 ALERT' : '✅ CLEAN');
     }).catch(()=>{});
-
-    fetchRugCheckSecure(pool.tokenMint).then(rcData => {
-        if (state.modalSession !== modalSession) return;
-        if(rcData) {
-            const isMint = rcData.token?.mintAuthority !== null;
-            safeSetText('beMint', isMint ? "Ya 🚨" : "Tidak ✅", isMint ? "text-red" : "text-green");
-            renderAIStrategyBox(pool, rcData, 0);
-        }
-    });
 
     // Buttons
     document.getElementById('mCopyBtn').onclick = () => copyText(displayCA, 'CA');

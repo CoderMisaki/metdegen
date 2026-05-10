@@ -134,6 +134,7 @@ export async function fillModalData(pool) {
     if (!pool) return;
     const modalSession = Date.now();
     state.modalSession = modalSession;
+    
     const dex = pool.dexData;
     const isAlpha = pool.isExternal || state.currentView === 'alpha';
     const chartAddress = pool.pairAddress || pool.address;
@@ -149,9 +150,13 @@ export async function fillModalData(pool) {
     const elAlpha = document.getElementById('alphaMetrics');
     const elMeteora = document.getElementById('meteoraMetrics');
 
+    // MENGHITUNG METRIK LANJUTAN DARI ENGINE KITA
+    const mData = computeAdvancedMetrics(pool);
+
     if (isAlpha) {
         if(elAlpha) elAlpha.style.display = 'block';
         if(elMeteora) elMeteora.style.display = 'none';
+        
         const activePrice = Number(pool.dexPrice || 0);
         safeSetText('mPriceAlpha', activePrice > 0 ? formatMoney(activePrice) : "—");
         safeSetText('mMCAlpha', formatMoney(dex?.fdv || 0));
@@ -159,6 +164,33 @@ export async function fillModalData(pool) {
         safeSetText('mVolAlpha', formatMoney(pool.vol24h || 0));
         safeSetText('mAgeAlpha', formatAge(pool.ageHours));
         safeSetText('mChangeAlpha', formatPct(pool.priceChange));
+
+        // MENGEMBALIKAN LOGIC SIGNAL ALPHA YANG HILANG
+        const buys1H = dex?.txns?.h1?.buys;
+        const sells1H = dex?.txns?.h1?.sells;
+        const buys24H = dex?.txns?.h24?.buys;
+        const sells24H = dex?.txns?.h24?.sells;
+
+        let trades1hStr = (buys1H !== undefined && sells1H !== undefined) ? `${formatNum(buys1H)} B / ${formatNum(sells1H)} S` : "—";
+        let trades24hStr = (buys24H !== undefined && sells24H !== undefined) ? `${formatNum(buys24H)} B / ${formatNum(sells24H)} S` : "—";
+
+        const usdVol1HHtml = trades1hStr !== "—" ? `<span>${trades1hStr}</span><br><span style="font-size:10px; color:var(--accent-green)">${formatMoney(mData.buyVol1m)}</span> <span style="font-size:10px; color:#666;">/</span> <span style="font-size:10px; color:var(--accent-red)">${formatMoney(mData.sellVol1m)}</span>` : "—";
+        const usdVol24HHtml = trades24hStr !== "—" ? `<span>${trades24hStr}</span><br><span style="font-size:10px; color:var(--accent-green)">${formatMoney(mData.buyVol24)}</span> <span style="font-size:10px; color:#666;">/</span> <span style="font-size:10px; color:var(--accent-red)">${formatMoney(mData.sellVol24)}</span>` : "—";
+
+        safeSetText('valMicro1Alpha', usdVol24HHtml, "metric-small text-primary");
+        safeSetText('valMicro2Alpha', usdVol1HHtml, "metric-small text-primary");
+        safeSetText('valMicro3Alpha', formatMoney(dex?.volume?.h1 || 0), "metric-small text-primary");
+
+        let whaleStatus = "Normal";
+        let whaleClass = "metric-small text-secondary";
+        if (mData.isBotSpam) { whaleStatus = "Bot Spam"; whaleClass = "metric-small text-red"; }
+        else if (mData.whaleAccumulation) { whaleStatus = "Dip Accumulation"; whaleClass = "metric-small text-green"; }
+        else if (!mData.validUsdTrend) { whaleStatus = "Distribusi / Dump"; whaleClass = "metric-small text-red"; }
+
+        safeSetText('valMicro4Alpha', whaleStatus, whaleClass);
+        safeSetText('valMicro5Alpha', mData.volSpike.toFixed(1) + 'x', "metric-small text-primary");
+        safeSetText('valMicro6Alpha', mData.avgTxSize1m > 0 ? formatMoney(mData.avgTxSize1m) : '—', "metric-small text-primary");
+
     } else {
         if(elAlpha) elAlpha.style.display = 'none';
         if(elMeteora) elMeteora.style.display = 'block';
@@ -168,21 +200,27 @@ export async function fillModalData(pool) {
         fetchMeteoraAdvancedMetrics(chartAddress).then(res => {
             if (state.modalSession !== modalSession) return;
             document.getElementById('dlmmLoading').innerText = '';
+            
             const mtData = (res && res.data && res.data.length > 0) ? res.data[0] : null;
             if (mtData) {
+                // PENYESUAIAN KUNCI JSON METEORA YANG BENAR
                 const activeTvl = Number(mtData.active_tvl || 0);
-                const fee24h = Number(mtData.fees_24h || 0);
-                const vol24h = Number(mtData.trade_volume_24h || 0);
-                const tvl = Number(mtData.liquidity || mtData.tvl || pool.tvl || 0);
-                const binStep = Number(mtData.dlmm_params?.bin_step || 0);
-                const volatility = Number(mtData.volatility || 0) * 100;
+                const fee24h = Number(mtData.fee || 0);
+                const vol24h = Number(mtData.volume || 0);
+                const tvl = Number(mtData.tvl || pool.tvl || 0);
+                
+                const binStep = Number(mtData.dlmm_params?.bin_step || pool.binStep || 0);
+                const volatility = Number(mtData.volatility || 0); // TANPA DIKALI 100!
+                
+                const baseFee = pool.feePct || 0.3; // Default 0.3 jika tidak ada info
+                const maxFee = pool.maxFeePct || baseFee * 1.5;
 
                 safeSetText('dlmmAge', formatAge(pool.ageHours));
                 safeSetText('dlmmVolat', volatility.toFixed(2) + '%');
                 safeSetText('dlmmActiveTVL', `${formatMoney(activeTvl)}<div class="m-subval">(${(tvl > 0 ? (activeTvl/tvl)*100 : 0).toFixed(0)}% of TVL)</div>`);
                 safeSetText('dlmmFeesActive', (mtData.fee_active_tvl_ratio || 0).toFixed(2) + '%');
                 safeSetText('dlmmVolActive', (mtData.volume_active_tvl_ratio || 0).toFixed(0) + '%');
-                safeSetText('dlmmTotalLPs', formatNum(mtData.unique_lps || 0));
+                safeSetText('dlmmTotalLPs', formatNum(mtData.unique_lps || mtData.total_lps || 0));
                 safeSetText('dlmmOpenPos', formatNum(mtData.open_positions || 0));
                 safeSetText('dlmmInRange', formatNum(mtData.active_positions || 0));
                 safeSetText('dlmmAvgFeeMin', formatMoney(fee24h / 1440));
@@ -190,8 +228,10 @@ export async function fillModalData(pool) {
                 safeSetText('dlmmTraders', formatNum(mtData.unique_traders || 0));
                 safeSetText('dlmmSwaps', formatNum(mtData.swap_count || 0));
                 safeSetText('dlmm24hFees', formatMoney(fee24h), "m-val text-green");
+                safeSetText('dlmm24hFeesTVL', tvl > 0 ? (fee24h / tvl * 100).toFixed(2) + '%' : '—');
                 safeSetText('dlmmBinStep', binStep, "m-val text-blue");
-                safeSetText('dlmmBaseFee', (mtData.base_fee_percentage || 0) + '%');
+                safeSetText('dlmmBaseFee', baseFee + '%');
+                safeSetText('dlmmMaxFee', maxFee + '%');
                 safeSetText('dlmmTVL', formatMoney(tvl));
             }
         });

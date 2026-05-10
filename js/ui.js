@@ -233,7 +233,6 @@ export async function fillModalData(pool) {
         });
     }
 
-    // ==== MENGEMBALIKAN BLOK RUGCHECK SECARA UTUH ====
     safeSetText('beHolders', 'Mengaudit...', 'metric-small text-secondary');
     safeSetText('beCreator', 'Mengaudit...', 'metric-small text-secondary');
     safeSetText('beMint', 'Mengaudit...', 'metric-small text-secondary');
@@ -243,17 +242,11 @@ export async function fillModalData(pool) {
         if (state.modalSession !== modalSession) return;
         if(rcData) {
             let finalTop10 = 0;
-            if (rcData.risks && Array.isArray(rcData.risks)) {
-                rcData.risks.forEach(r => {
-                    if (r.name.toLowerCase().includes('top 10') || r.description.toLowerCase().includes('top 10')) {
-                        const match = r.description.match(/(\d+(\.\d+)?)%/);
-                        if (match) finalTop10 = parseFloat(match[1]) / 100;
-                    }
-                });
-            }
-            if (finalTop10 === 0 && rcData.topHolders && Array.isArray(rcData.topHolders)) {
-                const cleanHolders = rcData.topHolders.filter(h => h.pct < 50); 
-                finalTop10 = cleanHolders.slice(0, 10).reduce((acc, curr) => acc + (curr.pct || 0), 0) / 100;
+            
+            // PERBAIKAN: Menghitung akumulasi Top 10 Holder 100% akurat dari raw data
+            if (rcData.topHolders && Array.isArray(rcData.topHolders)) {
+                // Ambil 10 dompet teratas dan totalkan persentasenya persis seperti web RugCheck
+                finalTop10 = rcData.topHolders.slice(0, 10).reduce((acc, curr) => acc + (curr.pct || 0), 0) / 100;
             }
 
             let creatorPct = 0;
@@ -269,7 +262,7 @@ export async function fillModalData(pool) {
             const isMint = rcData.token?.mintAuthority !== null;
             const isFreeze = rcData.token?.freezeAuthority !== null;
 
-            safeSetText('beHolders', finalTop10 > 0 ? (finalTop10 * 100).toFixed(1) + '%' : 'Aman ✅', finalTop10 > 0.25 ? 'metric-small text-red' : (finalTop10 > 0.15 ? 'metric-small text-orange' : 'metric-small text-green'));
+            safeSetText('beHolders', finalTop10 > 0 ? (finalTop10 * 100).toFixed(2) + '%' : 'Aman ✅', finalTop10 > 0.25 ? 'metric-small text-red' : (finalTop10 > 0.15 ? 'metric-small text-orange' : 'metric-small text-green'));
             safeSetText('beCreator', creatorPct > 0 ? (creatorPct * 100).toFixed(1) + '%' : 'Aman ✅', creatorPct > 0.1 ? 'metric-small text-red' : 'metric-small text-green');
             safeSetText('beMint', isMint ? "Ya 🚨" : "Tidak ✅", isMint ? "metric-small text-red" : "metric-small text-green");
             safeSetText('beFreeze', isFreeze ? "Ya 🚨" : "Tidak ✅", isFreeze ? "metric-small text-red" : "metric-small text-green");
@@ -288,7 +281,6 @@ export async function fillModalData(pool) {
         safeSetText('beMint', 'Timeout', 'metric-small text-red');
         safeSetText('beFreeze', 'Timeout', 'metric-small text-red');
     });
-    // ===============================================
 
     // GMGN Analytics
     const modalSignal = rm.abortPreviousModal();
@@ -302,6 +294,11 @@ export async function fillModalData(pool) {
     // Buttons
     document.getElementById('mCopyBtn').onclick = () => copyText(displayCA, 'CA');
     document.getElementById('mDexLinkBtn').href = `https://dexscreener.com/solana/${chartAddress}`;
+    
+    // PERBAIKAN: Mengaktifkan kembali tombol RugCheck yang hilang
+    const btnRug = document.getElementById('mRugCheckBtn');
+    if (btnRug) btnRug.href = `https://rugcheck.xyz/tokens/${displayCA}`;
+
     const btnLink = document.getElementById('mLinkBtn');
     if (isAlpha) {
         btnLink.innerText = "Trade DEX ↗"; btnLink.className = "btn btn-solid";

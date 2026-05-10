@@ -38,7 +38,6 @@ function cleanupSessionStorage(prefixes = ['mt_native_', 'rc_sec_'], maxEntries 
     try {
         const now = Date.now();
         const entries = [];
-
         for (let i = 0; i < sessionStorage.length; i++) {
             const key = sessionStorage.key(i);
             if (!key || !prefixes.some(p => key.startsWith(p))) continue;
@@ -72,7 +71,6 @@ export function json(res, status, payload) {
 export async function fetchWithCache(url, ttl = 60000, signal = null) {
     const now = Date.now();
     const cached = state.apiCache.get(url);
-
     if (cached && (now - cached.time < ttl)) { return cached.data; }
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(new Error('Request timeout')), 15000);
@@ -109,8 +107,8 @@ export async function fetchWithCache(url, ttl = 60000, signal = null) {
                 return data;
             } catch (err) {
                 lastErr = err;
-                if (err?.name === 'AbortError') { throw err; }
-                if (attempt < 2 && ( err?.status === 429 || err?.status >= 500 || err?.name === 'TypeError' || err?.name === 'ApiParseError' )) {
+                if (err?.name === 'AbortError') throw err;
+                if (attempt < 2 && (err?.status === 429 || err?.status >= 500 || err?.name === 'TypeError' || err?.name === 'ApiParseError')) {
                     await sleep(500 * (attempt + 1));
                     continue;
                 }
@@ -125,16 +123,22 @@ export async function fetchWithCache(url, ttl = 60000, signal = null) {
     }
 }
 
-// ==== BARU: Meteora Discovery API Fetcher ====
+// ==== METEORA APIs ====
+
 export async function fetchMeteoraDiscoveryAPI(signal = null) {
-    // Menggunakan parameter persis seperti di screenshot jaringan Meteora DevTools
     const query = 'page_size=50&filter_by=base_token_has_critical_warnings%3Dfalse%26quote_token_has_critical_warnings%3Dfalse%26pool_type%3Ddlmm%26base_token_market_cap%3E%3D150000%26base_token_holders%3E%3D100%26volume%3E%3D1000%26active_tvl%3E%3D10000%26fee_active_tvl_ratio%3E%3D0.01%26base_token_organic_score%3E%3D20%26quote_token_organic_score%3E%3D20&timeframe=24h&category=top';
     return fetchWithCache(`https://pool-discovery-api.datapi.meteora.ag/pools?${query}`, 45000, signal);
 }
 
+// BARU: API Real-time untuk Advanced Metrics per Pool
+export async function fetchMeteoraAdvancedMetrics(poolAddress, signal = null) {
+    if (!poolAddress) return null;
+    const url = `https://pool-discovery-api.datapi.meteora.ag/pools?filter_by=pool_address%3D${poolAddress}&page_size=1`;
+    return fetchWithCache(url, 30000, signal);
+}
+
 export async function fetchMeteoraNative(pairAddress) {
     if (!pairAddress) return null;
-
     cleanupSessionStorage();
     const cacheKey = 'mt_native_' + pairAddress;
     const cached = sessionStorage.getItem(cacheKey);
@@ -150,9 +154,10 @@ export async function fetchMeteoraNative(pairAddress) {
     } catch { return null; }
 }
 
+// ==== SECURITY & THIRD PARTY APIs ====
+
 export async function fetchRugCheckSecure(mint) {
     if (!mint || !isValidSolAddress(mint)) return null;
-
     cleanupSessionStorage();
     const cacheKey = 'rc_sec_' + mint;
     const cached = sessionStorage.getItem(cacheKey);
@@ -181,26 +186,6 @@ export async function fetchPinnedTokens(signal) {
     return fetchedPairs;
 }
 
-export function normalizeGMGNTrending(payload = {}) {
-    const root = payload?.data ?? payload ?? {};
-    const list = root.tokens || root.list || root.items || root.rows || root.trends || root.data || root.result || [];
-    return Array.isArray(list) ? list : [];
-}
-
-export function normalizeGMGNToken(payload = {}) {
-    const root = payload?.data ?? payload ?? {};
-    return root.data || root.result || root.token || root || {};
-}
-
-export function normalizeGMGNWallet(payload = {}) {
-    const root = payload?.data ?? payload ?? {};
-    const base = root.data || root.result || root;
-    return {
-        profit: base.profit || base.profit_stat || base.profitStat || {},
-        activity: base.activity || base.wallet_activity || base.rows || []
-    };
-}
-
 export async function fetchGMGNTokenAnalysis({ mint, pairAddress }, signal = null) {
     const q = new URLSearchParams();
     if (mint) q.set('mint', mint);
@@ -213,21 +198,17 @@ export async function fetchGMGNTrending({ interval = '1m', limit = 50, mode = 't
     return fetchWithCache(`/api/gmgn-trending?${q.toString()}`, mode === 'trench' ? 45000 : 8000, signal);
 }
 
-export async function fetchGMGNWallet({ wallet }, signal = null) {
-    if (!wallet) return null;
-    const q = new URLSearchParams({ wallet });
-    return fetchWithCache(`/api/gmgn-wallet?${q.toString()}`, 20000, signal);
+// ==== UTILS & MANAGERS ====
+
+export function normalizeGMGNToken(payload = {}) {
+    const root = payload?.data ?? payload ?? {};
+    return root.data || root.result || root.token || root || {};
 }
 
-export function normalizeDexPair(pair = {}) {
-    return {
-        address: pair.pairAddress || '',
-        mint: pair.baseToken?.address || pair.tokenAddress || '',
-        name: pair.baseToken?.name || pair.baseToken?.symbol || 'Unknown',
-        priceUsd: Number(pair.priceUsd || 0),
-        liquidityUsd: Number(pair.liquidity?.usd || 0),
-        volume24h: Number(pair.volume?.h24 || 0)
-    };
+export function normalizeGMGNTrending(payload = {}) {
+    const root = payload?.data ?? payload ?? {};
+    const list = root.tokens || root.list || root.items || root.rows || root.trends || root.data || root.result || [];
+    return Array.isArray(list) ? list : [];
 }
 
 const requestManager = { queue: [], active: 0, limit: 3, timers: new Map(), modalController: null };

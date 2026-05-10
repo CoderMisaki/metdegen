@@ -124,7 +124,6 @@ export async function fetchWithCache(url, ttl = 60000, signal = null) {
 }
 
 // ==== METEORA APIs ====
-
 export async function fetchMeteoraDiscoveryAPI(signal = null) {
     const query = 'page_size=50&filter_by=base_token_has_critical_warnings%3Dfalse%26quote_token_has_critical_warnings%3Dfalse%26pool_type%3Ddlmm%26base_token_market_cap%3E%3D150000%26base_token_holders%3E%3D100%26volume%3E%3D1000%26active_tvl%3E%3D10000%26fee_active_tvl_ratio%3E%3D0.01%26base_token_organic_score%3E%3D20%26quote_token_organic_score%3E%3D20&timeframe=24h&category=top';
     return fetchWithCache(`https://pool-discovery-api.datapi.meteora.ag/pools?${query}`, 45000, signal);
@@ -155,37 +154,32 @@ export async function fetchMeteoraNative(pairAddress) {
 
 // ==== SECURITY & THIRD PARTY APIs ====
 
-// === DI SINI PERUBAHANNYA: MEMANGGIL API LOKAL VERCEL (/api/rugcheck) ===
 export async function fetchRugCheckSecure(mint) {
     if (!mint || !isValidSolAddress(mint)) return null;
 
     cleanupSessionStorage();
     const cacheKey = 'rc_sec_' + mint;
     const cached = sessionStorage.getItem(cacheKey);
-    
     if (cached) { 
         try { 
             const parsed = JSON.parse(cached); 
             if (Date.now() - parsed.time < 300000) return parsed.data; 
         } catch {} 
     }
-    
     try {
-        // Memanggil API internal kita sendiri yang akan melakukan bypass login
-        const res = await fetch(`/api/rugcheck?mint=${mint}`, { 
-            headers: { 'Accept': 'application/json' } 
-        });
-        
+        const res = await fetch(`/api/rugcheck?mint=${mint}`, { headers: { 'Accept': 'application/json' } });
         if (!res.ok) return null;
-        
         const data = await res.json();
         if (!data) return null;
-
         sessionStorage.setItem(cacheKey, JSON.stringify({ data, time: Date.now() }));
         return data;
-    } catch { 
-        return null; 
-    }
+    } catch { return null; }
+}
+
+// === API BARU: AMBIL DAFTAR DOMPET DEX DARI RUGCHECK ===
+export async function fetchRugCheckKnownAccounts(signal = null) {
+    // Cache sangat lama (24 jam) karena daftar akun ini jarang berubah
+    return fetchWithCache('https://api.rugcheck.xyz/public/known_accounts.json', 86400000, signal).catch(() => ({}));
 }
 
 export async function fetchPinnedTokens(signal) {
@@ -214,7 +208,6 @@ export async function fetchGMGNTrending({ interval = '1m', limit = 50, mode = 't
 }
 
 // ==== UTILS & MANAGERS ====
-
 export function normalizeGMGNToken(payload = {}) {
     const root = payload?.data ?? payload ?? {};
     return root.data || root.result || root.token || root || {};

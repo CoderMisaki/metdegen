@@ -1,8 +1,7 @@
 import { state } from './config.js';
 import { safeExec, escapeHTML, formatAddress, formatMoney, formatPct, formatNum, formatAge } from './utils.js';
 import { computeAdvancedMetrics, getVolatilityProfile, buildStrategy } from './engine.js';
-// PERUBAHAN: Import fetchRugCheckKnownAccounts
-import { fetchMeteoraAdvancedMetrics, fetchRugCheckSecure, fetchRugCheckKnownAccounts, fetchGMGNTokenAnalysis, normalizeGMGNToken, createRequestManager } from './api.js';
+import { fetchMeteoraAdvancedMetrics, fetchRugCheckSecure, fetchGMGNTokenAnalysis, normalizeGMGNToken, createRequestManager } from './api.js';
 
 export function updateStaleBadge(isStale) {
     const el = document.getElementById('staleBadge');
@@ -239,39 +238,14 @@ export async function fillModalData(pool) {
     safeSetText('beMint', 'Mengaudit...', 'metric-small text-secondary');
     safeSetText('beFreeze', 'Mengaudit...', 'metric-small text-secondary');
 
-    // PERUBAHAN: Dibuat async agar bisa memanggil API known accounts
-    fetchRugCheckSecure(pool.tokenMint).then(async rcData => {
+    fetchRugCheckSecure(pool.tokenMint).then(rcData => {
         if (state.modalSession !== modalSession) return;
         if(rcData) {
             let finalTop10 = 0;
             
-            // 1. Tarik API JSON secara dinamis
-            const knownAccounts = await fetchRugCheckKnownAccounts();
-            // Ambil semua public key dari JSON tersebut untuk dijadikan daftar blokir
-            const excludedOwners = new Set(Object.keys(knownAccounts || {}));
-            // Tambahkan System Program (Burn address) manual untuk jaga-jaga
-            excludedOwners.add("11111111111111111111111111111111");
-
+            // LOGIC KEMBALI SEPERTI SEMULA: TOTAL RAW DATA 10 BESAR TANPA FILTER APAPUN
             if (rcData.topHolders && Array.isArray(rcData.topHolders)) {
-                
-                // 2. Kumpulkan address Pool/Market dari data RugCheck
-                let excludeAddresses = new Set();
-                if (rcData.markets && Array.isArray(rcData.markets)) {
-                    rcData.markets.forEach(m => {
-                        if (m.pubkey) excludeAddresses.add(m.pubkey);
-                    });
-                }
-
-                // 3. Filter! Buang dompet jika dia Market, Owner-nya masuk daftar, atau dompet itu sendiri masuk daftar
-                const cleanHolders = rcData.topHolders.filter(h => {
-                    if (excludeAddresses.has(h.address)) return false;
-                    if (h.owner && excludedOwners.has(h.owner)) return false;
-                    if (excludedOwners.has(h.address)) return false;
-                    return true;
-                });
-
-                // 4. Jumlahkan 10 pemegang bersih teratas
-                finalTop10 = cleanHolders.slice(0, 10).reduce((acc, curr) => acc + (curr.pct || 0), 0) / 100;
+                finalTop10 = rcData.topHolders.slice(0, 10).reduce((acc, curr) => acc + (curr.pct || 0), 0) / 100;
             }
 
             let creatorPct = 0;
@@ -287,7 +261,8 @@ export async function fillModalData(pool) {
             const isMint = rcData.token?.mintAuthority !== null;
             const isFreeze = rcData.token?.freezeAuthority !== null;
 
-            safeSetText('beHolders', finalTop10 > 0 ? (finalTop10 * 100).toFixed(2) + '%' : 'Aman ✅', finalTop10 > 0.25 ? 'metric-small text-red' : (finalTop10 > 0.15 ? 'metric-small text-orange' : 'metric-small text-green'));
+            // MENYESUAIKAN BATAS AMAN KARENA LP DIHITUNG (Batas amannya kita naikkan agar tidak selalu merah)
+            safeSetText('beHolders', finalTop10 > 0 ? (finalTop10 * 100).toFixed(2) + '%' : 'Aman ✅', finalTop10 > 0.40 ? 'metric-small text-red' : (finalTop10 > 0.30 ? 'metric-small text-orange' : 'metric-small text-green'));
             safeSetText('beCreator', creatorPct > 0 ? (creatorPct * 100).toFixed(1) + '%' : 'Aman ✅', creatorPct > 0.1 ? 'metric-small text-red' : 'metric-small text-green');
             safeSetText('beMint', isMint ? "Ya 🚨" : "Tidak ✅", isMint ? "metric-small text-red" : "metric-small text-green");
             safeSetText('beFreeze', isFreeze ? "Ya 🚨" : "Tidak ✅", isFreeze ? "metric-small text-red" : "metric-small text-green");

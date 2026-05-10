@@ -130,7 +130,6 @@ export async function fetchMeteoraDiscoveryAPI(signal = null) {
     return fetchWithCache(`https://pool-discovery-api.datapi.meteora.ag/pools?${query}`, 45000, signal);
 }
 
-// BARU: API Real-time untuk Advanced Metrics per Pool
 export async function fetchMeteoraAdvancedMetrics(poolAddress, signal = null) {
     if (!poolAddress) return null;
     const url = `https://pool-discovery-api.datapi.meteora.ag/pools?filter_by=pool_address%3D${poolAddress}&page_size=1`;
@@ -156,21 +155,37 @@ export async function fetchMeteoraNative(pairAddress) {
 
 // ==== SECURITY & THIRD PARTY APIs ====
 
+// === DI SINI PERUBAHANNYA: MEMANGGIL API LOKAL VERCEL (/api/rugcheck) ===
 export async function fetchRugCheckSecure(mint) {
     if (!mint || !isValidSolAddress(mint)) return null;
+
     cleanupSessionStorage();
     const cacheKey = 'rc_sec_' + mint;
     const cached = sessionStorage.getItem(cacheKey);
-    if (cached) { try { const parsed = JSON.parse(cached); if (Date.now() - parsed.time < 300000) return parsed.data; } catch {} }
+    
+    if (cached) { 
+        try { 
+            const parsed = JSON.parse(cached); 
+            if (Date.now() - parsed.time < 300000) return parsed.data; 
+        } catch {} 
+    }
+    
     try {
-        const res = await fetch(`https://api.rugcheck.xyz/v1/tokens/${mint}/report`, { headers: { 'Accept': 'application/json' } });
+        // Memanggil API internal kita sendiri yang akan melakukan bypass login
+        const res = await fetch(`/api/rugcheck?mint=${mint}`, { 
+            headers: { 'Accept': 'application/json' } 
+        });
+        
         if (!res.ok) return null;
-        const text = await res.text();
-        if (!text || !text.trim()) return null;
-        const data = safeJsonParse(text, `https://api.rugcheck.xyz/v1/tokens/${mint}/report`);
+        
+        const data = await res.json();
+        if (!data) return null;
+
         sessionStorage.setItem(cacheKey, JSON.stringify({ data, time: Date.now() }));
         return data;
-    } catch { return null; }
+    } catch { 
+        return null; 
+    }
 }
 
 export async function fetchPinnedTokens(signal) {

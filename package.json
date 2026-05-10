@@ -1,0 +1,9 @@
+{
+  "name": "masako-alpha-engine",
+  "version": "2.0.0",
+  "description": "Meteora Alpha Terminal API",
+  "dependencies": {
+    "bs58": "^6.0.0",
+    "tweetnacl": "^1.0.3"
+  }
+}

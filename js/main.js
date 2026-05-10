@@ -1,6 +1,5 @@
 import { state, MAX_CACHE, IGNORED_MINTS } from './config.js';
 import { isValidSolAddress, normalizeAddressInput } from './utils.js';
-// ==== BARU: Tambahkan fetchMeteoraDiscoveryAPI di import ====
 import { fetchWithCache, fetchPinnedTokens, fetchGMGNTrending, normalizeGMGNTrending, fetchMeteoraDiscoveryAPI } from './api.js';
 import { getDLMMInfoFromLabels, computeAdvancedMetrics, computeAlphaScore } from './engine.js';
 import { updateStaleBadge, showInfoBox, hideInfoBox, showToast, renderList, fillModalData, openModal, closeModal } from './ui.js';
@@ -266,7 +265,6 @@ async function fetchSearchDirectly(q) {
     }
 }
 
-// ==== BARU: REWRITE LOAD POOLS UNTUK DUAL-LOGIC (METEORA API + DEXSCREENER FALLBACK) ====
 async function loadPools() {
     if (state.isMeteoraLoading || state.currentView !== 'meteora') return;
 
@@ -290,30 +288,21 @@ async function loadPools() {
         let useFallback = false;
 
         try {
-            // ==========================================
-            // TAHAP 1: COBA FETCH METEORA DISCOVERY API
-            // ==========================================
             statusArea.innerText = 'Memanggil API Meteora Pool Discovery...';
-            console.log("[METEORA API] Mencoba mengekstrak pool DLMM langsung dari database Meteora...");
-
             const meteoraRes = await fetchMeteoraDiscoveryAPI(signal);
             if (signal?.aborted) return;
 
             if (meteoraRes && Array.isArray(meteoraRes.data) && meteoraRes.data.length > 0) {
-                console.log(`[METEORA API] SUKSES! Ditemukan ${meteoraRes.data.length} pool organik.`);
-
                 mappedData = meteoraRes.data.map((pool, index) => {
                     const tokenX = pool.token_x || {};
                     const tokenY = pool.token_y || {};
                     
-                    // Parsing field sesuai json screenshot DevTools
-                    const vol24h = Number(pool.trade_volume_24h || pool.volume || 0);
-                    const tvl = Number(pool.liquidity || pool.tvl || 0);
-                    const baseFee = Number(pool.base_fee_percentage || pool.fee || 0.3);
+                    // MEMPERBAIKI NAMA FIELD ASLI DARI JSON METEORA
+                    const vol24h = Number(pool.volume || pool.trade_volume_24h || 0);
+                    const tvl = Number(pool.tvl || pool.liquidity || 0);
+                    const fees24h = Number(pool.fee || pool.fees_24h || 0);
+                    const baseFee = Number(pool.base_fee_percentage || 0.3); // fallback standar 0.3%
                     
-                    // Estimasi atau parse fee harian
-                    const fees24h = Number(pool.fees_24h || pool.fees || (vol24h * (baseFee/100))); 
-
                     const newPool = {
                         name: pool.name || `${tokenX.symbol || 'UN'}/${tokenY.symbol || 'KN'}`,
                         address: pool.pool_address,
@@ -324,18 +313,17 @@ async function loadPools() {
                         vol24h: vol24h,
                         fees24h: fees24h,
                         tvl: tvl,
-                        dexData: pool, // Simpan payload json utuh jika butuh dibongkar modal
+                        dexData: pool, 
                         logoUrl: tokenX.icon || `https://api.dicebear.com/9.x/identicon/svg?seed=${tokenX.address || index}&backgroundColor=1e1e1e`,
-                        priceChange: 0, // Fallback 0 jika discovery tidak bawa stat 24h pct
+                        priceChange: 0, 
                         dexPrice: Number(tokenX.price || 0),
                         pairAddress: pool.pool_address,
                         ageHours: pool.created_at ? (Date.now() - (pool.created_at * 1000)) / 3600000 : null,
                         isExternal: false,
                         binStep: Number(pool.bin_step || pool.binStep || 0),
-                        isDLMM: true // Dari API filter sudah diseleksi DLMM
+                        isDLMM: true 
                     };
                     
-                    // Hitung formula kekuatan trend ala Masako
                     newPool.trendScore = (Math.log10(newPool.vol24h + 1) * 30) + (Math.min(newPool.vol24h / (newPool.tvl || 1), 100) * 15);
                     return newPool;
                 });
@@ -345,18 +333,10 @@ async function loadPools() {
 
         } catch (meteoraErr) {
             if (meteoraErr.name === 'AbortError') throw meteoraErr;
-            
-            // LOG ERROR YANG JELAS SESUAI INSTRUKSI
-            console.error("[METEORA API ERROR] Gagal mengeksekusi JSON Meteora Pool Discovery!");
-            console.error("Detail Error:", meteoraErr.message);
-            console.warn("[METEORA API FALLBACK] Menjalankan rute cadangan (Fallback) via DexScreener API...");
-            
+            console.error("[METEORA API ERROR] Gagal mengeksekusi JSON Meteora Pool Discovery!", meteoraErr.message);
             useFallback = true;
         }
 
-        // ==========================================
-        // TAHAP 2: FALLBACK KE DEXSCREENER (JIKA GAGAL)
-        // ==========================================
         if (useFallback) {
             statusArea.innerText = 'Fallback: Menyaring Pair DLMM Meteora dari DexScreener...';
 
@@ -429,9 +409,6 @@ async function loadPools() {
             });
         }
 
-        // ==========================================
-        // TAHAP 3: FINALISASI & FILTER RENDERING UTAMA
-        // ==========================================
         const validPools = mappedData.filter(p => state.pinnedTokens.has(p.address) || (p.dexPrice > 0 && p.vol24h >= 1000 && p.tvl >= 1000 && p.isDLMM));
         const uniquePoolsMap = new Map();
         
@@ -460,11 +437,7 @@ async function loadPools() {
         if (err.name !== 'AbortError') {
             if (state.poolsData.length > 0) {
                 updateStaleBadge(true);
-                showInfoBox(
-                    "Data Lama Dipakai",
-                    "Refresh gagal, jadi sistem memakai data cache terakhir yang masih ada.",
-                    true
-                );
+                showInfoBox("Data Lama Dipakai", "Refresh gagal, jadi sistem memakai data cache terakhir yang masih ada.", true);
             } else {
                 if (statusArea) statusArea.style.display = 'none';
                 const friendly = getReadableApiError(err);
@@ -478,8 +451,6 @@ async function loadPools() {
         }
     }
 }
-
-// ==== SISA KODE ALPHA DAN EVENT LISTENER TIDAK DIRUBAH ====
 
 async function fetchAlphaSignals() {
     if (state.isAlphaLoading || state.currentView !== 'alpha') return;

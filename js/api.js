@@ -49,7 +49,6 @@ function cleanupSessionStorage(prefixes = ['mt_native_', 'rc_sec_'], maxEntries 
             entries.push({ key, time });
             if (!time || now - time > 300000) sessionStorage.removeItem(key);
         }
-
         const fresh = entries.filter(e => e.time > 0).sort((a, b) => b.time - a.time);
         if (fresh.length > maxEntries) {
             fresh.slice(maxEntries).forEach(e => sessionStorage.removeItem(e.key));
@@ -74,95 +73,63 @@ export async function fetchWithCache(url, ttl = 60000, signal = null) {
     const now = Date.now();
     const cached = state.apiCache.get(url);
 
-    if (cached && (now - cached.time < ttl)) {
-        return cached.data;
-    }
-
+    if (cached && (now - cached.time < ttl)) { return cached.data; }
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(new Error('Request timeout')), 15000);
-
     let abortListener = null;
     if (signal) {
         abortListener = () => controller.abort(signal.reason || new Error('Aborted'));
         signal.addEventListener('abort', abortListener, { once: true });
     }
-
     let lastErr = null;
-
     try {
         for (let attempt = 0; attempt < 3; attempt++) {
             try {
-                const res = await fetch(url, {
-                    signal: controller.signal,
-                    cache: 'no-store',
-                    headers: {
-                        'Accept': 'application/json, text/plain, */*'
-                    }
-                });
-
+                const res = await fetch(url, { signal: controller.signal, cache: 'no-store', headers: { 'Accept': 'application/json, text/plain, */*' } });
                 if (!res.ok) {
                     const bodyText = getFriendlyBody(await res.text().catch(() => ''));
                     const err = createHttpError(res.status, url, bodyText);
-
                     if (res.status === 429) {
                         const retryAfter = Number(res.headers.get('retry-after') || 0);
-                        const waitMs = Number.isFinite(retryAfter) && retryAfter > 0
-                            ? retryAfter * 1000
-                            : 700 * (attempt + 1);
+                        const waitMs = Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : 700 * (attempt + 1);
                         lastErr = err;
-
-                        if (attempt < 2) {
-                            await sleep(waitMs);
-                            continue;
-                        }
+                        if (attempt < 2) { await sleep(waitMs); continue; }
                     }
-
                     if (isRetryableStatus(res.status) && attempt < 2) {
                         lastErr = err;
                         await sleep(500 * (attempt + 1));
                         continue;
                     }
-
                     throw err;
                 }
-
                 const text = await res.text();
-                if (!text || !text.trim()) {
-                    throw new Error(`Empty response from ${url}`);
-                }
-
+                if (!text || !text.trim()) { throw new Error(`Empty response from ${url}`); }
                 const data = safeJsonParse(text, url);
                 cacheSet(state.apiCache, url, { data, time: now });
                 return data;
             } catch (err) {
                 lastErr = err;
-
-                if (err?.name === 'AbortError') {
-                    throw err;
-                }
-
-                if (attempt < 2 && (
-                    err?.status === 429 ||
-                    err?.status >= 500 ||
-                    err?.name === 'TypeError' ||
-                    err?.name === 'ApiParseError'
-                )) {
+                if (err?.name === 'AbortError') { throw err; }
+                if (attempt < 2 && ( err?.status === 429 || err?.status >= 500 || err?.name === 'TypeError' || err?.name === 'ApiParseError' )) {
                     await sleep(500 * (attempt + 1));
                     continue;
                 }
-
                 break;
             }
         }
-
         if (cached) return cached.data;
         throw lastErr || new Error(`Request failed: ${url}`);
     } finally {
         clearTimeout(timeoutId);
-        if (signal && abortListener) {
-            signal.removeEventListener('abort', abortListener);
-        }
+        if (signal && abortListener) { signal.removeEventListener('abort', abortListener); }
     }
+}
+
+// ==== BARU: Meteora Discovery API Fetcher ====
+export async function fetchMeteoraDiscoveryAPI(signal = null) {
+    // Menggunakan parameter persis seperti di screenshot jaringan Meteora DevTools
+    const query = 'page_size=50&filter_by=base_token_has_critical_warnings%3Dfalse%26quote_token_has_critical_warnings%3Dfalse%26pool_type%3Ddlmm%26base_token_market_cap%3E%3D150000%26base_token_holders%3E%3D100%26volume%3E%3D1000%26active_tvl%3E%3D10000%26fee_active_tvl_ratio%3E%3D0.01%26base_token_organic_score%3E%3D20%26quote_token_organic_score%3E%3D20&timeframe=24h&category=top';
+    return fetchWithCache(`https://pool-discovery-api.datapi.meteora.ag/pools?${query}`, 45000, signal);
 }
 
 export async function fetchMeteoraNative(pairAddress) {
@@ -171,28 +138,16 @@ export async function fetchMeteoraNative(pairAddress) {
     cleanupSessionStorage();
     const cacheKey = 'mt_native_' + pairAddress;
     const cached = sessionStorage.getItem(cacheKey);
-    if (cached) {
-        try {
-            const parsed = JSON.parse(cached);
-            if (Date.now() - parsed.time < 120000) return parsed.data;
-        } catch {}
-    }
-
+    if (cached) { try { const parsed = JSON.parse(cached); if (Date.now() - parsed.time < 120000) return parsed.data; } catch {} }
     try {
-        const res = await fetch(`https://dlmm-api.meteora.ag/pair/${pairAddress}`, {
-            headers: { 'Accept': 'application/json' }
-        });
+        const res = await fetch(`https://dlmm-api.meteora.ag/pair/${pairAddress}`, { headers: { 'Accept': 'application/json' } });
         if (!res.ok) return null;
-
         const text = await res.text();
         if (!text || !text.trim()) return null;
-
         const data = safeJsonParse(text, `https://dlmm-api.meteora.ag/pair/${pairAddress}`);
         sessionStorage.setItem(cacheKey, JSON.stringify({ data, time: Date.now() }));
         return data;
-    } catch {
-        return null;
-    }
+    } catch { return null; }
 }
 
 export async function fetchRugCheckSecure(mint) {
@@ -201,65 +156,34 @@ export async function fetchRugCheckSecure(mint) {
     cleanupSessionStorage();
     const cacheKey = 'rc_sec_' + mint;
     const cached = sessionStorage.getItem(cacheKey);
-    if (cached) {
-        try {
-            const parsed = JSON.parse(cached);
-            if (Date.now() - parsed.time < 300000) return parsed.data;
-        } catch {}
-    }
-
+    if (cached) { try { const parsed = JSON.parse(cached); if (Date.now() - parsed.time < 300000) return parsed.data; } catch {} }
     try {
-        const res = await fetch(`https://api.rugcheck.xyz/v1/tokens/${mint}/report`, {
-            headers: { 'Accept': 'application/json' }
-        });
+        const res = await fetch(`https://api.rugcheck.xyz/v1/tokens/${mint}/report`, { headers: { 'Accept': 'application/json' } });
         if (!res.ok) return null;
-
         const text = await res.text();
         if (!text || !text.trim()) return null;
-
         const data = safeJsonParse(text, `https://api.rugcheck.xyz/v1/tokens/${mint}/report`);
         sessionStorage.setItem(cacheKey, JSON.stringify({ data, time: Date.now() }));
         return data;
-    } catch {
-        return null;
-    }
+    } catch { return null; }
 }
 
 export async function fetchPinnedTokens(signal) {
     if (state.pinnedTokens.size === 0) return [];
-
     const arrPins = Array.from(state.pinnedTokens);
     const fetchedPairs = [];
-
     for (let i = 0; i < arrPins.length; i += 30) {
         const chunk = arrPins.slice(i, i + 30).join(',');
-        const res = await fetchWithCache(
-            `https://api.dexscreener.com/latest/dex/tokens/${chunk}`,
-            30000,
-            signal
-        ).catch(() => null);
-
+        const res = await fetchWithCache(`https://api.dexscreener.com/latest/dex/tokens/${chunk}`, 30000, signal).catch(() => null);
         if (signal?.aborted) return [];
-
-        if (res && Array.isArray(res.pairs)) {
-            fetchedPairs.push(...res.pairs.filter(x => x.chainId === 'solana'));
-        }
+        if (res && Array.isArray(res.pairs)) { fetchedPairs.push(...res.pairs.filter(x => x.chainId === 'solana')); }
     }
-
     return fetchedPairs;
 }
 
 export function normalizeGMGNTrending(payload = {}) {
     const root = payload?.data ?? payload ?? {};
-    const list =
-        root.tokens ||
-        root.list ||
-        root.items ||
-        root.rows ||
-        root.trends ||
-        root.data ||
-        root.result ||
-        [];
+    const list = root.tokens || root.list || root.items || root.rows || root.trends || root.data || root.result || [];
     return Array.isArray(list) ? list : [];
 }
 
@@ -295,7 +219,6 @@ export async function fetchGMGNWallet({ wallet }, signal = null) {
     return fetchWithCache(`/api/gmgn-wallet?${q.toString()}`, 20000, signal);
 }
 
-
 export function normalizeDexPair(pair = {}) {
     return {
         address: pair.pairAddress || '',
@@ -307,9 +230,7 @@ export function normalizeDexPair(pair = {}) {
     };
 }
 
-const requestManager = {
-    queue: [], active: 0, limit: 3, timers: new Map(), modalController: null
-};
+const requestManager = { queue: [], active: 0, limit: 3, timers: new Map(), modalController: null };
 
 export function createRequestManager({ concurrency = 3 } = {}) {
     requestManager.limit = Math.max(1, concurrency);

@@ -1,7 +1,8 @@
 import { state } from './config.js';
 import { safeExec, escapeHTML, formatAddress, formatMoney, formatPct, formatNum, formatAge } from './utils.js';
 import { computeAdvancedMetrics, getVolatilityProfile, buildStrategy } from './engine.js';
-import { fetchMeteoraAdvancedMetrics, fetchRugCheckSecure, fetchGMGNTokenAnalysis, normalizeGMGNToken, createRequestManager } from './api.js';
+// PERUBAHAN: Import fetchRugCheckKnownAccounts
+import { fetchMeteoraAdvancedMetrics, fetchRugCheckSecure, fetchRugCheckKnownAccounts, fetchGMGNTokenAnalysis, normalizeGMGNToken, createRequestManager } from './api.js';
 
 export function updateStaleBadge(isStale) {
     const el = document.getElementById('staleBadge');
@@ -238,15 +239,39 @@ export async function fillModalData(pool) {
     safeSetText('beMint', 'Mengaudit...', 'metric-small text-secondary');
     safeSetText('beFreeze', 'Mengaudit...', 'metric-small text-secondary');
 
-    fetchRugCheckSecure(pool.tokenMint).then(rcData => {
+    // PERUBAHAN: Dibuat async agar bisa memanggil API known accounts
+    fetchRugCheckSecure(pool.tokenMint).then(async rcData => {
         if (state.modalSession !== modalSession) return;
         if(rcData) {
             let finalTop10 = 0;
             
-            // KODE BARU: HANYA MENGGUNAKAN RAW DATA DOMPET, MENGABAIKAN MESIN RISIKO RUGCHECK
+            // 1. Tarik API JSON secara dinamis
+            const knownAccounts = await fetchRugCheckKnownAccounts();
+            // Ambil semua public key dari JSON tersebut untuk dijadikan daftar blokir
+            const excludedOwners = new Set(Object.keys(knownAccounts || {}));
+            // Tambahkan System Program (Burn address) manual untuk jaga-jaga
+            excludedOwners.add("11111111111111111111111111111111");
+
             if (rcData.topHolders && Array.isArray(rcData.topHolders)) {
-                // Langsung jumlahkan 10 urutan teratas tanpa filter apapun, persis tabel UI
-                finalTop10 = rcData.topHolders.slice(0, 10).reduce((acc, curr) => acc + (curr.pct || 0), 0) / 100;
+                
+                // 2. Kumpulkan address Pool/Market dari data RugCheck
+                let excludeAddresses = new Set();
+                if (rcData.markets && Array.isArray(rcData.markets)) {
+                    rcData.markets.forEach(m => {
+                        if (m.pubkey) excludeAddresses.add(m.pubkey);
+                    });
+                }
+
+                // 3. Filter! Buang dompet jika dia Market, Owner-nya masuk daftar, atau dompet itu sendiri masuk daftar
+                const cleanHolders = rcData.topHolders.filter(h => {
+                    if (excludeAddresses.has(h.address)) return false;
+                    if (h.owner && excludedOwners.has(h.owner)) return false;
+                    if (excludedOwners.has(h.address)) return false;
+                    return true;
+                });
+
+                // 4. Jumlahkan 10 pemegang bersih teratas
+                finalTop10 = cleanHolders.slice(0, 10).reduce((acc, curr) => acc + (curr.pct || 0), 0) / 100;
             }
 
             let creatorPct = 0;

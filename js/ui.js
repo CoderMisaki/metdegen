@@ -250,7 +250,8 @@ export async function fillModalData(pool) {
                 safeSetText('dlmmFeesActive', `${(mtData?.fee_active_tvl_ratio || 0).toFixed(2)}%${formatDelta(mtData?.fee_active_tvl_ratio_change_percent ?? mtData?.fee_active_tvl_ratio_change)}`);
                 safeSetText('dlmmVolActive', `${(mtData?.volume_active_tvl_ratio || 0).toFixed(0)}%${formatDelta(mtData?.volume_active_tvl_ratio_change_percent ?? mtData?.volume_active_tvl_ratio_change)}`);
                 safeSetText('dlmmTotalLPs', `${formatNum(mtData?.total_lps ?? mtData?.unique_lps ?? 0)}${formatDelta(mtData?.unique_lps_change_percent ?? mtData?.total_lps_change)}`);
-                safeSetText('dlmmNewLPs', `${formatNum(mtData?.new_lps || 0)}${formatDelta(mtData?.new_lps_change_percent ?? mtData?.new_lps_change)}`);
+                // Update pembacaan LP agar ngambil dari natData (API asli Meteora)
+                safeSetText('dlmmNewLPs', `${formatNum(natData?.new_lps ?? mtData?.new_lps ?? 0)}${formatDelta(natData?.new_lps_change_percent ?? mtData?.new_lps_change_percent ?? mtData?.new_lps_change)}`);
                 safeSetText('dlmmOpenPos', formatNum(mtData?.open_positions || 0));
                 safeSetText('dlmmInRange', `${formatNum(mtData?.active_positions || 0)}${formatDelta(mtData?.active_positions_change_percent ?? mtData?.active_positions_change)}`);
                 safeSetText('dlmmAvgFeeMin', formatMoney(fee24h / 1440));
@@ -266,7 +267,7 @@ export async function fillModalData(pool) {
                 safeSetText('dlmmMaxFee', maxFee.toFixed(2) + '%');
                 safeSetText('dlmmProtocolFee', protocolFee.toFixed(5) + '%');
                 safeSetText('dlmmTVL', formatMoney(tvl));
-                safeSetText('dlmmPosCreated', `${formatNum(mtData?.positions_created || 0)}${formatDelta(mtData?.positions_created_change_percent ?? mtData?.positions_created_change)}`);
+                safeSetText('dlmmPosCreated', `${formatNum(natData?.positions_created ?? mtData?.positions_created ?? 0)}${formatDelta(natData?.positions_created_change_percent ?? mtData?.positions_created_change_percent ?? mtData?.positions_created_change)}`);
                 safeSetText('dlmmNetDeposits', formatMoney(mtData?.net_deposit ?? mtData?.net_deposits ?? 0));
             }
         });

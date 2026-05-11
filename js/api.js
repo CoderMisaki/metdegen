@@ -138,7 +138,7 @@ export async function fetchMeteoraAdvancedMetrics(poolAddress, signal = null) {
 export async function fetchMeteoraNative(pairAddress) {
     if (!pairAddress) return null;
     cleanupSessionStorage();
-    const cacheKey = 'mt_native_' + pairAddress;
+    const cacheKey = 'mt_nat_v2_' + pairAddress;
     const cached = sessionStorage.getItem(cacheKey);
     if (cached) { try { const parsed = JSON.parse(cached); if (Date.now() - parsed.time < 120000) return parsed.data; } catch {} }
     try {

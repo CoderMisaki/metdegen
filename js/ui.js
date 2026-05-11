@@ -239,10 +239,13 @@ export async function fillModalData(pool) {
                 const baseFee = Number(natData?.base_fee_percentage ?? mtData?.base_fee_percentage ?? pool.feePct ?? 0);
                 const protocolFee = Number(natData?.protocol_fee_percentage ?? mtData?.protocol_fee_percentage ?? 0);
                 const maxFee = Number(natData?.max_fee_percentage ?? pickFeePercent(mtData, pool) ?? 0);
-                const totalTradingFee = Number(natData?.fee_percentage ?? mtData?.fee_percentage ?? baseFee);
+                // Pastikan menarik current_fee_percentage jika fee_percentage kosong
+                const totalTradingFee = Number(natData?.current_fee_percentage ?? natData?.fee_percentage ?? mtData?.fee_percentage ?? baseFee);
                 const dynamicFee = totalTradingFee > baseFee
                     ? totalTradingFee - baseFee
                     : Number(natData?.dynamic_fee_percentage ?? mtData?.dynamic_fee_percentage ?? 0);
+                // Fungsi bantu otomatis membersihkan angka nol di belakang desimal
+                const exactFee = (num) => Number(num.toFixed(9)).toString() + '%';
 
                 safeSetText('dlmmAge', formatAge(pool.ageHours));
                 safeSetText('dlmmVolat', volatility.toFixed(2) + '%');
@@ -261,11 +264,11 @@ export async function fillModalData(pool) {
                 safeSetText('dlmm24hFees', formatMoney(fee24h), "m-val text-green");
                 safeSetText('dlmm24hFeesTVL', tvl > 0 ? (fee24h / tvl * 100).toFixed(2) + '%' : '—');
                 safeSetText('dlmmBinStep', binStep, "m-val text-blue");
-                safeSetText('dlmmBaseFee', baseFee.toFixed(2) + '%');
-                safeSetText('dlmmDynamicFee', dynamicFee.toFixed(5) + '%');
-                safeSetText('dlmmTotalTradingFee', totalTradingFee.toFixed(5) + '%');
-                safeSetText('dlmmMaxFee', maxFee.toFixed(2) + '%');
-                safeSetText('dlmmProtocolFee', protocolFee.toFixed(5) + '%');
+                safeSetText('dlmmBaseFee', exactFee(baseFee));
+                safeSetText('dlmmDynamicFee', exactFee(dynamicFee));
+                safeSetText('dlmmTotalTradingFee', exactFee(totalTradingFee));
+                safeSetText('dlmmMaxFee', exactFee(maxFee));
+                safeSetText('dlmmProtocolFee', exactFee(protocolFee));
                 safeSetText('dlmmTVL', formatMoney(tvl));
                 safeSetText('dlmmPosCreated', `${formatNum(natData?.positions_created ?? mtData?.positions_created ?? 0)}${formatDelta(natData?.positions_created_change_percent ?? mtData?.positions_created_change_percent ?? mtData?.positions_created_change)}`);
                 safeSetText('dlmmNetDeposits', formatMoney(mtData?.net_deposit ?? mtData?.net_deposits ?? 0));

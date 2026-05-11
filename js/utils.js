@@ -56,7 +56,13 @@ export function getBestPriceChange(dex) {
 
 export function formatAge(hours) {
     if (hours === null || hours === undefined) return "—";
-    if (hours < 24) return `${hours.toFixed(1)}h`;
+    
+    // Perbaikan untuk hitungan di bawah 24 jam (Jam & Menit)
+    if (hours < 24) {
+        const h = Math.floor(hours);
+        const m = Math.floor((hours - h) * 60);
+        return m > 0 ? `${h}h ${m}m` : `${h}h`;
+    }
     
     const totalDays = Math.floor(hours / 24);
     

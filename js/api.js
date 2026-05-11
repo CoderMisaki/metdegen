@@ -142,12 +142,12 @@ export async function fetchMeteoraNative(pairAddress) {
     const cached = sessionStorage.getItem(cacheKey);
     if (cached) { try { const parsed = JSON.parse(cached); if (Date.now() - parsed.time < 120000) return parsed.data; } catch {} }
     try {
-        // PERBAIKAN: Gunakan endpoint dlmm-api yang asli dan valid
-        const res = await fetch(`https://dlmm-api.meteora.ag/pair/${pairAddress}`, { headers: { 'Accept': 'application/json' } });
+        // PERBAIKAN: Menembak Vercel Serverless Proxy milik kita sendiri
+        const res = await fetch(`/api/meteora?pairAddress=${pairAddress}`, { headers: { 'Accept': 'application/json' } });
         if (!res.ok) return null;
-        const text = await res.text();
-        if (!text || !text.trim()) return null;
-        const data = safeJsonParse(text, `https://dlmm-api.meteora.ag/pair/${pairAddress}`);
+        const data = await res.json();
+
+        if (!data || data.error) return null;
         sessionStorage.setItem(cacheKey, JSON.stringify({ data, time: Date.now() }));
         return data;
     } catch { return null; }

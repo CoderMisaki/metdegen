@@ -342,6 +342,13 @@ export async function fillModalData(pool) {
 
     // GMGN Analytics
     const modalSignal = rm.abortPreviousModal();
+    
+    // 1. Tampilkan status Loading agar UI tidak terlihat 'nyangkut' atau kosong
+    safeSetText('gmgnRat', 'Loading...', 'metric-small text-secondary text-xs');
+    safeSetText('gmgnBundle', 'Loading...', 'metric-small text-secondary text-xs');
+    safeSetText('gmgnDev', 'Loading...', 'metric-small text-secondary text-xs');
+    safeSetText('gmgnSmart', 'Loading...', 'metric-small text-secondary text-xs');
+
     rm.enqueue(() => fetchGMGNTokenAnalysis({ mint: pool.tokenMint || pool.altMint, pairAddress: chartAddress }, modalSignal)).then(tokenRaw => {
         if (state.modalSession !== modalSession) return;
         const tData = normalizeGMGNToken(tokenRaw);
@@ -365,18 +372,21 @@ export async function fillModalData(pool) {
 
     }).catch((error) => {
         if (state.modalSession !== modalSession) return;
-        const errMsg = getErrorDetails(error);
-        const uiMsg = `Error: ${escapeHTML(errMsg)}`;
-        console.error('[GMGN][Modal] Failed to fetch GMGN ON-CHAIN INTELLIGENCE:', {
-            mint: pool.tokenMint || pool.altMint,
-            pairAddress: chartAddress,
-            error
-        });
+        
+        // Cek apakah error 502/403 (Cloudflare)
+        const errorString = String(error?.message || error?.error || error);
+        const isBlocked = errorString.includes('502') || errorString.includes('403') || errorString.includes('BLOCKED');
+        
+        // Teks error dibuat pendek agar TIDAK NEMBUS LAYAR
+        const uiMsg = isBlocked ? 'API Blocked 🛑' : 'Timeout ⚠️';
+        
+        console.error('[GMGN][Modal] Error Log:', errorString);
 
-        safeSetText('gmgnRat', uiMsg, 'metric-small text-red');
-        safeSetText('gmgnBundle', uiMsg, 'metric-small text-red');
-        safeSetText('gmgnDev', uiMsg, 'metric-small text-red');
-        safeSetText('gmgnSmart', uiMsg, 'metric-small text-red');
+        // Render teks error yang sudah diperpendek ke UI
+        safeSetText('gmgnRat', uiMsg, 'metric-small text-red text-xs');
+        safeSetText('gmgnBundle', uiMsg, 'metric-small text-red text-xs');
+        safeSetText('gmgnDev', uiMsg, 'metric-small text-red text-xs');
+        safeSetText('gmgnSmart', uiMsg, 'metric-small text-red text-xs');
     });
 
     // Buttons

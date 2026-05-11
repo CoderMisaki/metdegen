@@ -21,8 +21,32 @@ import { updateStaleBadge, showInfoBox, hideInfoBox, showToast, renderList, fill
         return false; 
     }; 
     window.addEventListener('unhandledrejection', function (event) { 
-        const reason = event?.reason; 
-        reportError({ type: 'unhandledrejection', message: reason?.message || (typeof reason === 'string' ? reason : 'Unhandled promise rejection'), source: 'promise', lineno: 0, colno: 0, error: reason?.stack || JSON.stringify(reason || null) }); 
+        const reason = event?.reason;
+        
+        let errorMessage = 'Unhandled promise rejection';
+        let errorStack = null;
+
+        if (reason instanceof Error) {
+            errorMessage = reason.message;
+            errorStack = reason.stack;
+        } else if (typeof reason === 'string') {
+            errorMessage = reason;
+        } else {
+            try {
+                errorMessage = JSON.stringify(reason);
+            } catch (e) {
+                errorMessage = 'Unstringifiable Promise Rejection object';
+            }
+        }
+
+        reportError({ 
+            type: 'unhandledrejection', 
+            message: errorMessage, 
+            source: 'promise', 
+            lineno: 0, 
+            colno: 0, 
+            error: errorStack || errorMessage 
+        }); 
     });
 })();
 

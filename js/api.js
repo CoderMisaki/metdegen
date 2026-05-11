@@ -138,19 +138,31 @@ export async function fetchMeteoraAdvancedMetrics(poolAddress, signal = null) {
 export async function fetchMeteoraNative(pairAddress) {
     if (!pairAddress) return null;
     cleanupSessionStorage();
-    const cacheKey = 'mt_nat_v2_' + pairAddress;
+    
+    // Ganti cache key ke v3 agar browser melupakan data kosong yang nyangkut sebelumnya
+    const cacheKey = 'mt_nat_v3_' + pairAddress;
     const cached = sessionStorage.getItem(cacheKey);
     if (cached) { try { const parsed = JSON.parse(cached); if (Date.now() - parsed.time < 120000) return parsed.data; } catch {} }
+    
     try {
-        // PERBAIKAN: Menembak Vercel Serverless Proxy milik kita sendiri
-        const res = await fetch(`/api/meteora?pairAddress=${pairAddress}`, { headers: { 'Accept': 'application/json' } });
+        // Eksekusi LANGSUNG dari browser. Hilangkan proxy /api/meteora Vercel
+        const res = await fetch(`https://dlmm-api.meteora.ag/pair/${pairAddress}`, { 
+            headers: { 'Accept': 'application/json' } 
+        });
+        
         if (!res.ok) return null;
-        const data = await res.json();
-
-        if (!data || data.error) return null;
+        
+        // Gunakan text() dan safeJsonParse untuk mencegah error jika body kosong
+        const text = await res.text();
+        if (!text || !text.trim()) return null;
+        
+        const data = safeJsonParse(text, `https://dlmm-api.meteora.ag/pair/${pairAddress}`);
+        
         sessionStorage.setItem(cacheKey, JSON.stringify({ data, time: Date.now() }));
         return data;
-    } catch { return null; }
+    } catch { 
+        return null; 
+    }
 }
 
 // ==== SECURITY & THIRD PARTY APIs ====

@@ -131,8 +131,8 @@ export async function fetchMeteoraDiscoveryAPI(signal = null) {
 
 export async function fetchMeteoraAdvancedMetrics(poolAddress, signal = null) {
     if (!poolAddress) return null;
-    // PERBAIKAN: Gunakan parameter 'search' agar API tidak mengembalikan koin acak
-    const url = `https://pool-discovery-api.datapi.meteora.ag/pools?search=${poolAddress}&page_size=10`;
+    // PERBAIKAN: Kembali gunakan filter_by, JANGAN search!
+    const url = `https://pool-discovery-api.datapi.meteora.ag/pools?filter_by=pool_address%3D${poolAddress}&page_size=1`;
     return fetchWithCache(url, 30000, signal);
 }
 
@@ -140,14 +140,14 @@ export async function fetchMeteoraNative(pairAddress) {
     if (!pairAddress) return null;
     cleanupSessionStorage();
     
-    const cacheKey = 'mt_nat_v6_' + pairAddress;
+    const cacheKey = 'mt_nat_v7_' + pairAddress;
     const cached = sessionStorage.getItem(cacheKey);
     if (cached) { try { const parsed = JSON.parse(cached); if (Date.now() - parsed.time < 120000) return parsed.data; } catch {} }
     
     try {
-        // PERBAIKAN: Fetch langsung tanpa proxy, set batas waktu (timeout) 3 detik agar tidak lemot!
+        // PERBAIKAN ANTI-LEMOT: Set maksimal tunggu 2.5 detik. Kalau Cloudflare macet, langsung diskip agar UI cepat terbuka!
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 3000);
+        const timeoutId = setTimeout(() => controller.abort(), 2500);
         
         const res = await fetch(`https://dlmm-api.meteora.ag/pair/${pairAddress}`, { 
             headers: { 'Accept': 'application/json' },

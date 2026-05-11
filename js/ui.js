@@ -338,8 +338,24 @@ export async function fillModalData(pool) {
     rm.enqueue(() => fetchGMGNTokenAnalysis({ mint: pool.tokenMint || pool.altMint, pairAddress: chartAddress }, modalSignal)).then(tokenRaw => {
         if (state.modalSession !== modalSession) return;
         const tData = normalizeGMGNToken(tokenRaw);
-        safeSetText('gmgnRat', tData.rat_ratio ? (tData.rat_ratio*100).toFixed(1)+'%' : '—');
-        safeSetText('gmgnDev', tData.is_show_alert ? '🚨 ALERT' : '✅ CLEAN');
+        
+        // 1. Rat Trader Ratio
+        const rat = Number(tData.rat_trader_amount_percentage ?? tData.rat_ratio ?? 0);
+        safeSetText('gmgnRat', rat > 0 ? (rat * 100).toFixed(1) + '%' : '0%', rat >= 0.2 ? 'metric-small text-red' : 'metric-small text-secondary');
+
+        // 2. Bundle Ratio (Bluechip)
+        const bundle = Number(tData.bluechip_owner_percentage ?? tData.bundle_ratio ?? 0);
+        safeSetText('gmgnBundle', bundle > 0 ? (bundle * 100).toFixed(1) + '%' : '0%', bundle >= 0.2 ? 'metric-small text-red' : 'metric-small text-secondary');
+
+        // 3. Dev Status
+        const isAlert = tData.is_show_alert === true;
+        safeSetText('gmgnDev', isAlert ? '🚨 ALERT' : '✅ CLEAN', isAlert ? 'metric-small text-red' : 'metric-small text-green');
+
+        // 4. Smart Money P&L
+        const smart = tData.smartMoney?.data?.data ?? tData.smartMoney?.data ?? tData.smart_money ?? {};
+        const pnl = Number(smart.total_pnl ?? smart.pnl ?? smart.realized_pnl ?? 0);
+        safeSetText('gmgnSmart', pnl !== 0 ? formatMoney(pnl) : '0', pnl > 0 ? 'metric-small text-green' : (pnl < 0 ? 'metric-small text-red' : 'metric-small text-secondary'));
+
     }).catch(()=>{});
 
     // Buttons

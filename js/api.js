@@ -131,7 +131,8 @@ export async function fetchMeteoraDiscoveryAPI(signal = null) {
 
 export async function fetchMeteoraAdvancedMetrics(poolAddress, signal = null) {
     if (!poolAddress) return null;
-    const url = `https://pool-discovery-api.datapi.meteora.ag/pools?filter_by=pool_address%3D${poolAddress}&page_size=1`;
+    // PERBAIKAN: Gunakan parameter 'search' agar API tidak mengembalikan koin acak
+    const url = `https://pool-discovery-api.datapi.meteora.ag/pools?search=${poolAddress}&page_size=10`;
     return fetchWithCache(url, 30000, signal);
 }
 
@@ -139,42 +140,32 @@ export async function fetchMeteoraNative(pairAddress) {
     if (!pairAddress) return null;
     cleanupSessionStorage();
     
-    // Ganti cache key ke v5 agar browser melupakan cache error sebelumnya
-    const cacheKey = 'mt_nat_v5_' + pairAddress;
+    const cacheKey = 'mt_nat_v6_' + pairAddress;
     const cached = sessionStorage.getItem(cacheKey);
     if (cached) { try { const parsed = JSON.parse(cached); if (Date.now() - parsed.time < 120000) return parsed.data; } catch {} }
     
-    const targetUrl = `https://dlmm-api.meteora.ag/pair/${pairAddress}`;
-    
-    // PERBAIKAN: Strategi Multi-Proxy. Jika satu diblokir Cloudflare, tembak pakai yang lain!
-    const proxies = [
-        `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`,
-        `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`,
-        `https://api.codetabs.com/v1/proxy?quest=${targetUrl}`
-    ];
-
-    for (const proxy of proxies) {
-        try {
-            const res = await fetch(proxy, { headers: { 'Accept': 'application/json' }, cache: 'no-store' });
-            if (!res.ok) continue; // Jika error/diblokir, langsung lanjut ke proxy berikutnya
-            
-            const text = await res.text();
-            if (!text || !text.trim()) continue;
-            
-            const data = safeJsonParse(text, proxy);
-            
-            // Validasi keras: Pastikan data benar-benar JSON Meteora (bukan pesan error Cloudflare)
-            if (data && (data.bin_step !== undefined || data.address)) {
-                sessionStorage.setItem(cacheKey, JSON.stringify({ data, time: Date.now() }));
-                return data; // Sukses! Berhenti mencari.
-            }
-        } catch (e) {
-            continue;
-        }
+    try {
+        // PERBAIKAN: Fetch langsung tanpa proxy, set batas waktu (timeout) 3 detik agar tidak lemot!
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3000);
+        
+        const res = await fetch(`https://dlmm-api.meteora.ag/pair/${pairAddress}`, { 
+            headers: { 'Accept': 'application/json' },
+            signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        if (!res.ok) return null;
+        
+        const text = await res.text();
+        if (!text || !text.trim()) return null;
+        
+        const data = safeJsonParse(text, `https://dlmm-api.meteora.ag/pair/${pairAddress}`);
+        sessionStorage.setItem(cacheKey, JSON.stringify({ data, time: Date.now() }));
+        return data;
+    } catch { 
+        return null; 
     }
-    
- 
-   return null; // Semua proxy gagal
 }
 
 // ==== SECURITY & THIRD PARTY APIs ====

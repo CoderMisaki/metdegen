@@ -56,6 +56,13 @@ function formatDelta(value, digits = 2) {
     return `<div class="m-subval">(${sign}${n.toFixed(digits)}%)</div>`;
 }
 
+
+function getErrorDetails(error) {
+    if (!error) return 'Unknown error';
+    const base = error?.message || error?.error || String(error);
+    return base && base.length > 120 ? `${base.slice(0, 117)}...` : base;
+}
+
 function pickFeePercent(mtData, pool) {
     const cands = [
         mtData?.dlmm_params?.max_fee_percentage,
@@ -356,7 +363,21 @@ export async function fillModalData(pool) {
         const pnl = Number(smart.total_pnl ?? smart.pnl ?? smart.realized_pnl ?? 0);
         safeSetText('gmgnSmart', pnl !== 0 ? formatMoney(pnl) : '0', pnl > 0 ? 'metric-small text-green' : (pnl < 0 ? 'metric-small text-red' : 'metric-small text-secondary'));
 
-    }).catch(()=>{});
+    }).catch((error) => {
+        if (state.modalSession !== modalSession) return;
+        const errMsg = getErrorDetails(error);
+        const uiMsg = `Error: ${escapeHTML(errMsg)}`;
+        console.error('[GMGN][Modal] Failed to fetch GMGN ON-CHAIN INTELLIGENCE:', {
+            mint: pool.tokenMint || pool.altMint,
+            pairAddress: chartAddress,
+            error
+        });
+
+        safeSetText('gmgnRat', uiMsg, 'metric-small text-red');
+        safeSetText('gmgnBundle', uiMsg, 'metric-small text-red');
+        safeSetText('gmgnDev', uiMsg, 'metric-small text-red');
+        safeSetText('gmgnSmart', uiMsg, 'metric-small text-red');
+    });
 
     // Buttons
     document.getElementById('mCopyBtn').onclick = () => copyText(displayCA, 'CA');

@@ -216,7 +216,7 @@ export async function fillModalData(pool) {
         if(elAlpha) elAlpha.style.display = 'none';
         if(elMeteora) elMeteora.style.display = 'block';
         document.getElementById('dlmmLoading').innerText = '(Fetching real-time metrics...)';
-        
+
         Promise.all([
             fetchMeteoraAdvancedMetrics(chartAddress),
             fetchMeteoraNative(chartAddress)
@@ -224,26 +224,33 @@ export async function fillModalData(pool) {
             if (state.modalSession !== modalSession) return;
             document.getElementById('dlmmLoading').innerText = '';
 
-            const mtData = (advRes && advRes.data && advRes.data.length > 0) ? advRes.data[0] : null;
+            // PERBAIKAN BUG NYANGKUT: Pastikan data benar-benar milik koin yang kamu klik!
+            let mtData = null;
+            if (advRes && advRes.data && Array.isArray(advRes.data)) {
+                mtData = advRes.data.find(p => p.pool_address === chartAddress || p.address === chartAddress) || null;
+            }
+
             const natData = nativeRes || {};
 
             if (mtData || Object.keys(natData).length > 0) {
-                const activeTvl = Number(mtData?.active_tvl || 0);
-                const fee24h = Number(mtData?.fee || natData?.fees_24h || 0);
-                const vol24h = Number(mtData?.volume || natData?.trade_volume_24h || 0);
+                // Fallback aman: Jika mtData kosong, pakai data dasar dari pool DexScreener
+                const activeTvl = Number(mtData?.active_tvl || pool.tvl || 0);
+                const fee24h = Number(mtData?.fee || natData?.fees_24h || pool.fees24h || 0);
+                const vol24h = Number(mtData?.volume || natData?.trade_volume_24h || pool.vol24h || 0);
                 const tvl = Number(mtData?.tvl || natData?.liquidity || pool.tvl || 0);
 
                 const binStep = Number(natData?.bin_step || mtData?.bin_step || pool.binStep || 0);
                 const volatility = Number(mtData?.volatility || 0);
 
-                // PERBAIKAN: Fallback langsung ke root mtData, tanpa dlmm_params
                 const baseFee = Number(natData?.base_fee_percentage ?? mtData?.base_fee_percentage ?? pool.feePct ?? 0);
                 const protocolFee = Number(natData?.protocol_fee_percentage ?? mtData?.protocol_fee_percentage ?? 0);
                 const maxFee = Number(natData?.max_fee_percentage ?? mtData?.max_fee_percentage ?? pickFeePercent(mtData, pool) ?? 0);
+                
                 const totalTradingFee = Number(natData?.current_fee_percentage ?? natData?.fee_percentage ?? mtData?.fee_percentage ?? baseFee);
                 const dynamicFee = totalTradingFee > baseFee
                     ? totalTradingFee - baseFee
                     : Number(natData?.dynamic_fee_percentage ?? mtData?.dynamic_fee_percentage ?? 0);
+                
                 // Fungsi bantu otomatis membersihkan angka nol di belakang desimal
                 const exactFee = (num) => Number(num.toFixed(9)).toString() + '%';
 

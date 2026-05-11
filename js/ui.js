@@ -1,7 +1,7 @@
 import { state } from './config.js';
 import { safeExec, escapeHTML, formatAddress, formatMoney, formatPct, formatNum, formatAge } from './utils.js';
 import { computeAdvancedMetrics, getVolatilityProfile, buildStrategy } from './engine.js';
-import { fetchMeteoraAdvancedMetrics, fetchRugCheckSecure, fetchGMGNTokenAnalysis, normalizeGMGNToken, createRequestManager } from './api.js';
+import { fetchMeteoraAdvancedMetrics, fetchMeteoraNative, fetchRugCheckSecure, fetchGMGNTokenAnalysis, normalizeGMGNToken, createRequestManager } from './api.js';
 
 export function updateStaleBadge(isStale) {
     const el = document.getElementById('staleBadge');
@@ -217,52 +217,57 @@ export async function fillModalData(pool) {
         if(elMeteora) elMeteora.style.display = 'block';
         document.getElementById('dlmmLoading').innerText = '(Fetching real-time metrics...)';
         
-        fetchMeteoraAdvancedMetrics(chartAddress).then(res => {
+        Promise.all([
+            fetchMeteoraAdvancedMetrics(chartAddress),
+            fetchMeteoraNative(chartAddress)
+        ]).then(([advRes, nativeRes]) => {
             if (state.modalSession !== modalSession) return;
             document.getElementById('dlmmLoading').innerText = '';
-            
-            const mtData = (res && res.data && res.data.length > 0) ? res.data[0] : null;
-            if (mtData) {
-                const activeTvl = Number(mtData.active_tvl || 0);
-                const fee24h = Number(mtData.fee || 0);
-                const vol24h = Number(mtData.volume || 0);
-                const tvl = Number(mtData.tvl || pool.tvl || 0);
-                
-                const binStep = Number(mtData.dlmm_params?.bin_step || pool.binStep || 0);
-                const volatility = Number(mtData.volatility || 0);
-                
-                const baseFee = Number(mtData.dlmm_params?.base_fee_percentage ?? mtData.base_fee_percentage ?? pool.feePct ?? 0);
-                const dynamicFee = Number(mtData.dynamic_fee_percentage ?? mtData.fee_percentage ?? 0);
-                const protocolFee = Number(mtData.protocol_fee_percentage ?? 0);
-                const totalTradingFee = baseFee + dynamicFee;
-                const maxFee = pickFeePercent(mtData, pool);
+
+            const mtData = (advRes && advRes.data && advRes.data.length > 0) ? advRes.data[0] : null;
+            const natData = nativeRes || {};
+
+            if (mtData || Object.keys(natData).length > 0) {
+                const activeTvl = Number(mtData?.active_tvl || 0);
+                const fee24h = Number(mtData?.fee || natData?.fees_24h || 0);
+                const vol24h = Number(mtData?.volume || natData?.trade_volume_24h || 0);
+                const tvl = Number(mtData?.tvl || natData?.liquidity || pool.tvl || 0);
+
+                const binStep = Number(natData?.bin_step || mtData?.dlmm_params?.bin_step || pool.binStep || 0);
+                const volatility = Number(mtData?.volatility || 0);
+
+                const baseFee = Number(natData?.base_fee_percentage ?? mtData?.base_fee_percentage ?? pool.feePct ?? 0);
+                const protocolFee = Number(natData?.protocol_fee_percentage ?? mtData?.protocol_fee_percentage ?? 0);
+                const maxFee = Number(natData?.max_fee_percentage ?? pickFeePercent(mtData, pool) ?? 0);
+                const totalTradingFee = Number(natData?.fee_percentage ?? mtData?.fee_percentage ?? baseFee);
+                const dynamicFee = totalTradingFee > baseFee
+                    ? totalTradingFee - baseFee
+                    : Number(natData?.dynamic_fee_percentage ?? mtData?.dynamic_fee_percentage ?? 0);
 
                 safeSetText('dlmmAge', formatAge(pool.ageHours));
                 safeSetText('dlmmVolat', volatility.toFixed(2) + '%');
-                safeSetText('dlmmActiveTVL', `${formatMoney(activeTvl)}${formatDelta(mtData.active_tvl_change_percent ?? mtData.active_tvl_change, 1)}`);
-                safeSetText('dlmmFeesActive', `${(mtData.fee_active_tvl_ratio || 0).toFixed(2)}%${formatDelta(mtData.fee_active_tvl_ratio_change_percent ?? mtData.fee_active_tvl_ratio_change)}`);
-                safeSetText('dlmmVolActive', `${(mtData.volume_active_tvl_ratio || 0).toFixed(0)}%${formatDelta(mtData.volume_active_tvl_ratio_change_percent ?? mtData.volume_active_tvl_ratio_change)}`);
-                safeSetText('dlmmTotalLPs', `${formatNum(mtData.unique_lps || mtData.total_lps || 0)}${formatDelta(mtData.unique_lps_change_percent ?? mtData.total_lps_change)}`);
-                safeSetText('dlmmOpenPos', formatNum(mtData.open_positions || 0));
-                safeSetText('dlmmInRange', `${formatNum(mtData.active_positions || 0)}${formatDelta(mtData.active_positions_change_percent ?? mtData.active_positions_change)}`);
+                safeSetText('dlmmActiveTVL', `${formatMoney(activeTvl)}${formatDelta(mtData?.active_tvl_change_percent ?? mtData?.active_tvl_change, 1)}`);
+                safeSetText('dlmmFeesActive', `${(mtData?.fee_active_tvl_ratio || 0).toFixed(2)}%${formatDelta(mtData?.fee_active_tvl_ratio_change_percent ?? mtData?.fee_active_tvl_ratio_change)}`);
+                safeSetText('dlmmVolActive', `${(mtData?.volume_active_tvl_ratio || 0).toFixed(0)}%${formatDelta(mtData?.volume_active_tvl_ratio_change_percent ?? mtData?.volume_active_tvl_ratio_change)}`);
+                safeSetText('dlmmTotalLPs', `${formatNum(mtData?.total_lps ?? mtData?.unique_lps ?? 0)}${formatDelta(mtData?.unique_lps_change_percent ?? mtData?.total_lps_change)}`);
+                safeSetText('dlmmNewLPs', `${formatNum(mtData?.new_lps || 0)}${formatDelta(mtData?.new_lps_change_percent ?? mtData?.new_lps_change)}`);
+                safeSetText('dlmmOpenPos', formatNum(mtData?.open_positions || 0));
+                safeSetText('dlmmInRange', `${formatNum(mtData?.active_positions || 0)}${formatDelta(mtData?.active_positions_change_percent ?? mtData?.active_positions_change)}`);
                 safeSetText('dlmmAvgFeeMin', formatMoney(fee24h / 1440));
                 safeSetText('dlmmAvgVolMin', formatMoney(vol24h / 1440));
-                safeSetText('dlmmTraders', formatNum(mtData.unique_traders || 0));
-                safeSetText('dlmmSwaps', formatNum(mtData.swap_count || 0));
+                safeSetText('dlmmTraders', formatNum(mtData?.unique_traders || 0));
+                safeSetText('dlmmSwaps', formatNum(mtData?.swap_count || 0));
                 safeSetText('dlmm24hFees', formatMoney(fee24h), "m-val text-green");
                 safeSetText('dlmm24hFeesTVL', tvl > 0 ? (fee24h / tvl * 100).toFixed(2) + '%' : '—');
                 safeSetText('dlmmBinStep', binStep, "m-val text-blue");
                 safeSetText('dlmmBaseFee', baseFee.toFixed(2) + '%');
-                safeSetText('dlmmDynamicFee', dynamicFee.toFixed(2) + '%');
-                safeSetText('dlmmTotalTradingFee', totalTradingFee.toFixed(2) + '%');
+                safeSetText('dlmmDynamicFee', dynamicFee.toFixed(5) + '%');
+                safeSetText('dlmmTotalTradingFee', totalTradingFee.toFixed(5) + '%');
                 safeSetText('dlmmMaxFee', maxFee.toFixed(2) + '%');
-                safeSetText('dlmmProtocolFee', protocolFee.toFixed(4) + '%');
+                safeSetText('dlmmProtocolFee', protocolFee.toFixed(5) + '%');
                 safeSetText('dlmmTVL', formatMoney(tvl));
-                safeSetText('dlmmNewLPs', `${formatNum(mtData.new_lps || 0)}${formatDelta(mtData.new_lps_change_percent ?? mtData.new_lps_change)}`);
-                safeSetText('dlmmPosCreated', `${formatNum(mtData.positions_created || 0)}${formatDelta(mtData.positions_created_change_percent ?? mtData.positions_created_change)}`);
-                safeSetText('dlmmTraders', `${formatNum(mtData.unique_traders || 0)}${formatDelta(mtData.unique_traders_change_percent ?? mtData.unique_traders_change)}`);
-                safeSetText('dlmmSwaps', `${formatNum(mtData.swap_count || 0)}${formatDelta(mtData.swap_count_change_percent ?? mtData.swap_count_change)}`);
-                safeSetText('dlmmNetDeposits', formatMoney(mtData.net_deposit || mtData.net_deposits || 0));
+                safeSetText('dlmmPosCreated', `${formatNum(mtData?.positions_created || 0)}${formatDelta(mtData?.positions_created_change_percent ?? mtData?.positions_created_change)}`);
+                safeSetText('dlmmNetDeposits', formatMoney(mtData?.net_deposit ?? mtData?.net_deposits ?? 0));
             }
         });
     }

@@ -139,30 +139,42 @@ export async function fetchMeteoraNative(pairAddress) {
     if (!pairAddress) return null;
     cleanupSessionStorage();
     
-    // Cache Key v4 agar browser melupakan cache error sebelumnya
-    const cacheKey = 'mt_nat_v4_' + pairAddress;
+    // Ganti cache key ke v5 agar browser melupakan cache error sebelumnya
+    const cacheKey = 'mt_nat_v5_' + pairAddress;
     const cached = sessionStorage.getItem(cacheKey);
     if (cached) { try { const parsed = JSON.parse(cached); if (Date.now() - parsed.time < 120000) return parsed.data; } catch {} }
     
-    try {
-        // PERBAIKAN: Gunakan AllOrigins untuk bypass CORS Browser & Cloudflare
-        const targetUrl = `https://dlmm-api.meteora.ag/pair/${pairAddress}?t=${Date.now()}`;
-        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
-        
-        const res = await fetch(proxyUrl, { headers: { 'Accept': 'application/json' } });
-        
-        if (!res.ok) return null;
-        
-        const text = await res.text();
-        if (!text || !text.trim()) return null;
-        
-        const data = safeJsonParse(text, proxyUrl);
-        
-        sessionStorage.setItem(cacheKey, JSON.stringify({ data, time: Date.now() }));
-        return data;
-    } catch { 
-        return null; 
+    const targetUrl = `https://dlmm-api.meteora.ag/pair/${pairAddress}`;
+    
+    // PERBAIKAN: Strategi Multi-Proxy. Jika satu diblokir Cloudflare, tembak pakai yang lain!
+    const proxies = [
+        `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`,
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`,
+        `https://api.codetabs.com/v1/proxy?quest=${targetUrl}`
+    ];
+
+    for (const proxy of proxies) {
+        try {
+            const res = await fetch(proxy, { headers: { 'Accept': 'application/json' }, cache: 'no-store' });
+            if (!res.ok) continue; // Jika error/diblokir, langsung lanjut ke proxy berikutnya
+            
+            const text = await res.text();
+            if (!text || !text.trim()) continue;
+            
+            const data = safeJsonParse(text, proxy);
+            
+            // Validasi keras: Pastikan data benar-benar JSON Meteora (bukan pesan error Cloudflare)
+            if (data && (data.bin_step !== undefined || data.address)) {
+                sessionStorage.setItem(cacheKey, JSON.stringify({ data, time: Date.now() }));
+                return data; // Sukses! Berhenti mencari.
+            }
+        } catch (e) {
+            continue;
+        }
     }
+    
+ 
+   return null; // Semua proxy gagal
 }
 
 // ==== SECURITY & THIRD PARTY APIs ====

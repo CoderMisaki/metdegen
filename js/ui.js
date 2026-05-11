@@ -233,14 +233,13 @@ export async function fillModalData(pool) {
                 const vol24h = Number(mtData?.volume || natData?.trade_volume_24h || 0);
                 const tvl = Number(mtData?.tvl || natData?.liquidity || pool.tvl || 0);
 
-                const binStep = Number(natData?.bin_step || mtData?.dlmm_params?.bin_step || pool.binStep || 0);
+                const binStep = Number(natData?.bin_step || mtData?.bin_step || pool.binStep || 0);
                 const volatility = Number(mtData?.volatility || 0);
 
-                // Fallback ekstra: Ambil data fee dari dalam dlmm_params jika proxy gagal
-                const baseFee = Number(natData?.base_fee_percentage ?? mtData?.dlmm_params?.base_fee_percentage ?? pool.feePct ?? 0);
-                const protocolFee = Number(natData?.protocol_fee_percentage ?? mtData?.dlmm_params?.protocol_fee_percentage ?? 0);
-                const maxFee = Number(natData?.max_fee_percentage ?? mtData?.dlmm_params?.max_fee_percentage ?? pickFeePercent(mtData, pool) ?? 0);
-                // Pastikan menarik current_fee_percentage jika fee_percentage kosong
+                // PERBAIKAN: Fallback langsung ke root mtData, tanpa dlmm_params
+                const baseFee = Number(natData?.base_fee_percentage ?? mtData?.base_fee_percentage ?? pool.feePct ?? 0);
+                const protocolFee = Number(natData?.protocol_fee_percentage ?? mtData?.protocol_fee_percentage ?? 0);
+                const maxFee = Number(natData?.max_fee_percentage ?? mtData?.max_fee_percentage ?? pickFeePercent(mtData, pool) ?? 0);
                 const totalTradingFee = Number(natData?.current_fee_percentage ?? natData?.fee_percentage ?? mtData?.fee_percentage ?? baseFee);
                 const dynamicFee = totalTradingFee > baseFee
                     ? totalTradingFee - baseFee

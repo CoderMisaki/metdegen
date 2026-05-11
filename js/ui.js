@@ -232,54 +232,54 @@ export async function fillModalData(pool) {
 
             const natData = nativeRes || {};
 
-            if (mtData || Object.keys(natData).length > 0) {
-                // Fallback aman: Jika mtData kosong, pakai data dasar dari pool DexScreener
-                const activeTvl = Number(mtData?.active_tvl || pool.tvl || 0);
-                const fee24h = Number(mtData?.fee || natData?.fees_24h || pool.fees24h || 0);
-                const vol24h = Number(mtData?.volume || natData?.trade_volume_24h || pool.vol24h || 0);
-                const tvl = Number(mtData?.tvl || natData?.liquidity || pool.tvl || 0);
+            // PERBAIKAN KOSONG (—): Hapus blok 'if'. Selalu paksa render menggunakan data DexScreener (pool) sebagai pelampung jika Meteora gagal!
+            const activeTvl = Number(mtData?.active_tvl || pool.tvl || 0);
+            const fee24h = Number(mtData?.fee || natData?.fees_24h || pool.fees24h || 0);
+            const vol24h = Number(mtData?.volume || natData?.trade_volume_24h || pool.vol24h || 0);
+            const tvl = Number(mtData?.tvl || natData?.liquidity || pool.tvl || 0);
 
-                const binStep = Number(natData?.bin_step || mtData?.bin_step || pool.binStep || 0);
-                const volatility = Number(mtData?.volatility || 0);
+            const binStep = Number(natData?.bin_step || mtData?.bin_step || pool.binStep || 0);
+            const volatility = Number(mtData?.volatility || 0);
 
-                const baseFee = Number(natData?.base_fee_percentage ?? mtData?.base_fee_percentage ?? pool.feePct ?? 0);
-                const protocolFee = Number(natData?.protocol_fee_percentage ?? mtData?.protocol_fee_percentage ?? 0);
-                const maxFee = Number(natData?.max_fee_percentage ?? mtData?.max_fee_percentage ?? pickFeePercent(mtData, pool) ?? 0);
-                
-                const totalTradingFee = Number(natData?.current_fee_percentage ?? natData?.fee_percentage ?? mtData?.fee_percentage ?? baseFee);
-                const dynamicFee = totalTradingFee > baseFee
-                    ? totalTradingFee - baseFee
-                    : Number(natData?.dynamic_fee_percentage ?? mtData?.dynamic_fee_percentage ?? 0);
-                
-                // Fungsi bantu otomatis membersihkan angka nol di belakang desimal
-                const exactFee = (num) => Number(num.toFixed(9)).toString() + '%';
+            const baseFee = Number(natData?.base_fee_percentage ?? mtData?.base_fee_percentage ?? pool.feePct ?? 0);
+            const protocolFee = Number(natData?.protocol_fee_percentage ?? mtData?.protocol_fee_percentage ?? 0);
+            const maxFee = Number(natData?.max_fee_percentage ?? mtData?.max_fee_percentage ?? pickFeePercent(mtData, pool) ?? 0);
+            
+            const totalTradingFee = Number(natData?.current_fee_percentage ?? natData?.fee_percentage ?? mtData?.fee_percentage ?? baseFee);
+            const dynamicFee = totalTradingFee > baseFee
+                ? totalTradingFee - baseFee
+                : Number(natData?.dynamic_fee_percentage ?? mtData?.dynamic_fee_percentage ?? 0);
+            
+            const exactFee = (num) => Number(num.toFixed(9)).toString() + '%';
 
-                safeSetText('dlmmAge', formatAge(pool.ageHours));
-                safeSetText('dlmmVolat', volatility.toFixed(2) + '%');
-                safeSetText('dlmmActiveTVL', `${formatMoney(activeTvl)}${formatDelta(mtData?.active_tvl_change_percent ?? mtData?.active_tvl_change, 1)}`);
-                safeSetText('dlmmFeesActive', `${(mtData?.fee_active_tvl_ratio || 0).toFixed(2)}%${formatDelta(mtData?.fee_active_tvl_ratio_change_percent ?? mtData?.fee_active_tvl_ratio_change)}`);
-                safeSetText('dlmmVolActive', `${(mtData?.volume_active_tvl_ratio || 0).toFixed(0)}%${formatDelta(mtData?.volume_active_tvl_ratio_change_percent ?? mtData?.volume_active_tvl_ratio_change)}`);
-                safeSetText('dlmmTotalLPs', `${formatNum(mtData?.total_lps ?? mtData?.unique_lps ?? 0)}${formatDelta(mtData?.unique_lps_change_percent ?? mtData?.total_lps_change)}`);
-                // Update pembacaan LP agar ngambil dari natData (API asli Meteora)
-                safeSetText('dlmmNewLPs', `${formatNum(natData?.new_lps ?? mtData?.new_lps ?? 0)}${formatDelta(natData?.new_lps_change_percent ?? mtData?.new_lps_change_percent ?? mtData?.new_lps_change)}`);
-                safeSetText('dlmmOpenPos', formatNum(mtData?.open_positions || 0));
-                safeSetText('dlmmInRange', `${formatNum(mtData?.active_positions || 0)}${formatDelta(mtData?.active_positions_change_percent ?? mtData?.active_positions_change)}`);
-                safeSetText('dlmmAvgFeeMin', formatMoney(fee24h / 1440));
-                safeSetText('dlmmAvgVolMin', formatMoney(vol24h / 1440));
-                safeSetText('dlmmTraders', formatNum(mtData?.unique_traders || 0));
-                safeSetText('dlmmSwaps', formatNum(mtData?.swap_count || 0));
-                safeSetText('dlmm24hFees', formatMoney(fee24h), "m-val text-green");
-                safeSetText('dlmm24hFeesTVL', tvl > 0 ? (fee24h / tvl * 100).toFixed(2) + '%' : '—');
-                safeSetText('dlmmBinStep', binStep, "m-val text-blue");
-                safeSetText('dlmmBaseFee', exactFee(baseFee));
-                safeSetText('dlmmDynamicFee', exactFee(dynamicFee));
-                safeSetText('dlmmTotalTradingFee', exactFee(totalTradingFee));
-                safeSetText('dlmmMaxFee', exactFee(maxFee));
-                safeSetText('dlmmProtocolFee', exactFee(protocolFee));
-                safeSetText('dlmmTVL', formatMoney(tvl));
-                safeSetText('dlmmPosCreated', `${formatNum(natData?.positions_created ?? mtData?.positions_created ?? 0)}${formatDelta(natData?.positions_created_change_percent ?? mtData?.positions_created_change_percent ?? mtData?.positions_created_change)}`);
-                safeSetText('dlmmNetDeposits', formatMoney(mtData?.net_deposit ?? mtData?.net_deposits ?? 0));
-            }
+            // Hitung manual persentase jika server API Meteora sedang error
+            const calcFeesActive = mtData?.fee_active_tvl_ratio !== undefined ? mtData.fee_active_tvl_ratio.toFixed(2) : (activeTvl > 0 ? (fee24h/activeTvl*100).toFixed(2) : 0);
+            const calcVolActive = mtData?.volume_active_tvl_ratio !== undefined ? mtData.volume_active_tvl_ratio.toFixed(0) : (activeTvl > 0 ? (vol24h/activeTvl*100).toFixed(0) : 0);
+
+            safeSetText('dlmmAge', formatAge(pool.ageHours));
+            safeSetText('dlmmVolat', volatility.toFixed(2) + '%');
+            safeSetText('dlmmActiveTVL', `${formatMoney(activeTvl)}${formatDelta(mtData?.active_tvl_change_percent ?? mtData?.active_tvl_change, 1)}`);
+            safeSetText('dlmmFeesActive', `${calcFeesActive}%${formatDelta(mtData?.fee_active_tvl_ratio_change_percent ?? mtData?.fee_active_tvl_ratio_change)}`);
+            safeSetText('dlmmVolActive', `${calcVolActive}%${formatDelta(mtData?.volume_active_tvl_ratio_change_percent ?? mtData?.volume_active_tvl_ratio_change)}`);
+            safeSetText('dlmmTotalLPs', `${formatNum(mtData?.total_lps ?? mtData?.unique_lps ?? 0)}${formatDelta(mtData?.unique_lps_change_percent ?? mtData?.total_lps_change)}`);
+            safeSetText('dlmmNewLPs', `${formatNum(natData?.new_lps ?? mtData?.new_lps ?? 0)}${formatDelta(natData?.new_lps_change_percent ?? mtData?.new_lps_change_percent ?? mtData?.new_lps_change)}`);
+            safeSetText('dlmmOpenPos', formatNum(mtData?.open_positions || 0));
+            safeSetText('dlmmInRange', `${formatNum(mtData?.active_positions || 0)}${formatDelta(mtData?.active_positions_change_percent ?? mtData?.active_positions_change)}`);
+            safeSetText('dlmmAvgFeeMin', formatMoney(fee24h / 1440));
+            safeSetText('dlmmAvgVolMin', formatMoney(vol24h / 1440));
+            safeSetText('dlmmTraders', formatNum(mtData?.unique_traders || 0));
+            safeSetText('dlmmSwaps', formatNum(mtData?.swap_count || 0));
+            safeSetText('dlmm24hFees', formatMoney(fee24h), "m-val text-green");
+            safeSetText('dlmm24hFeesTVL', tvl > 0 ? (fee24h / tvl * 100).toFixed(2) + '%' : '—');
+            safeSetText('dlmmBinStep', binStep, "m-val text-blue");
+            safeSetText('dlmmBaseFee', exactFee(baseFee));
+            safeSetText('dlmmDynamicFee', exactFee(dynamicFee));
+            safeSetText('dlmmTotalTradingFee', exactFee(totalTradingFee));
+            safeSetText('dlmmMaxFee', exactFee(maxFee));
+            safeSetText('dlmmProtocolFee', exactFee(protocolFee));
+            safeSetText('dlmmTVL', formatMoney(tvl));
+            safeSetText('dlmmPosCreated', `${formatNum(natData?.positions_created ?? mtData?.positions_created ?? 0)}${formatDelta(natData?.positions_created_change_percent ?? mtData?.positions_created_change_percent ?? mtData?.positions_created_change)}`);
+            safeSetText('dlmmNetDeposits', formatMoney(mtData?.net_deposit ?? mtData?.net_deposits ?? 0));
         });
     }
 

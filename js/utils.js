@@ -57,7 +57,16 @@ export function getBestPriceChange(dex) {
 export function formatAge(hours) {
     if (hours === null || hours === undefined) return "—";
     if (hours < 24) return `${hours.toFixed(1)}h`;
-    const d = Math.floor(hours / 24);
+    
+    const totalDays = Math.floor(hours / 24);
+    
+    // Konversi ke format bulan (Meteora Style)
+    if (totalDays >= 30) {
+        const m = Math.floor(totalDays / 30);
+        const d = totalDays % 30;
+        return d > 0 ? `${m}mo ${d}d` : `${m}mo`;
+    }
+    
     const h = Math.floor(hours % 24);
-    return `${d}d ${h}h`;
+    return h > 0 ? `${totalDays}d ${h}h` : `${totalDays}d`;
 }

@@ -236,9 +236,10 @@ export async function fillModalData(pool) {
                 const binStep = Number(natData?.bin_step || mtData?.dlmm_params?.bin_step || pool.binStep || 0);
                 const volatility = Number(mtData?.volatility || 0);
 
-                const baseFee = Number(natData?.base_fee_percentage ?? mtData?.base_fee_percentage ?? pool.feePct ?? 0);
-                const protocolFee = Number(natData?.protocol_fee_percentage ?? mtData?.protocol_fee_percentage ?? 0);
-                const maxFee = Number(natData?.max_fee_percentage ?? pickFeePercent(mtData, pool) ?? 0);
+                // Fallback ekstra: Ambil data fee dari dalam dlmm_params jika proxy gagal
+                const baseFee = Number(natData?.base_fee_percentage ?? mtData?.dlmm_params?.base_fee_percentage ?? pool.feePct ?? 0);
+                const protocolFee = Number(natData?.protocol_fee_percentage ?? mtData?.dlmm_params?.protocol_fee_percentage ?? 0);
+                const maxFee = Number(natData?.max_fee_percentage ?? mtData?.dlmm_params?.max_fee_percentage ?? pickFeePercent(mtData, pool) ?? 0);
                 // Pastikan menarik current_fee_percentage jika fee_percentage kosong
                 const totalTradingFee = Number(natData?.current_fee_percentage ?? natData?.fee_percentage ?? mtData?.fee_percentage ?? baseFee);
                 const dynamicFee = totalTradingFee > baseFee

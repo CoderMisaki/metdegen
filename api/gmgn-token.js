@@ -10,11 +10,18 @@ module.exports = async function handler(req, res) {
     }
 
     const target = mint || pairAddress;
-    const data = await gmgnRequest(
-      `/api/v1/mutil_window_token_security_launchpad/sol/${encodeURIComponent(target)}`
+    const resData = await gmgnRequest(
+      `/defi/quotation/v1/tokens/sol/${encodeURIComponent(target)}`
     );
 
-    return json(res, 200, { ok: true, source: 'gmgn', data });
+    const openApiData = resData?.data || {};
+    const flattenedData = {
+      ...(openApiData.token || {}),
+      ...(openApiData.security || {}),
+      smart_money: openApiData.smart_money || {}
+    };
+
+    return json(res, 200, { ok: true, source: 'gmgn', data: flattenedData });
   } catch (error) {
     return json(res, error.code === 'GMGN_BLOCKED' ? 502 : 500, {
       ok: false,

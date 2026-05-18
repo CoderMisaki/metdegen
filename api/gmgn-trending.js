@@ -8,27 +8,23 @@ module.exports = async function handler(req, res) {
     const isTrench = String(mode).toLowerCase() === 'trench';
 
     const path = isTrench
-      ? '/trs/api/v1/trenches_rank'
-      : '/api/v1/rank/sol/swaps/1h';
+      ? '/defi/quotation/v1/rank/sol/swaps/1h'
+      : `/defi/quotation/v1/rank/sol/swaps/${interval}`;
 
-    const query = isTrench
-      ? {}
-      : {
-          orderby: 'swaps',
-          direction: 'desc',
-          limit,
-          'filters[]': ['renounced', 'frozen']
-        };
+    const query = {
+      orderby: 'swaps',
+      direction: 'desc',
+      limit
+    };
 
-    const data = isTrench
-      ? await gmgnRequest(path, query, { method: 'POST', body: {} })
-      : await gmgnRequest(path, query);
+    const resData = await gmgnRequest(path, query);
+    const rankList = resData?.data?.rank || resData?.data || [];
 
     return json(res, 200, {
       ok: true,
       source: 'gmgn',
       mode: isTrench ? 'trench' : 'trending',
-      data
+      data: rankList
     });
   } catch (error) {
     return json(res, error.code === 'GMGN_BLOCKED' ? 502 : 500, {

@@ -291,10 +291,11 @@ async function loadPools(force = false) {
     try {
         let mappedData = [];
         let useFallback = false;
+        let meteoraRes = null;
 
         try {
             statusArea.innerText = `Memanggil API ${getMeteoraCategoryLabel()} Meteora (${getTimeframeLabel(state.meteoraTimeframe)})...`;
-            const meteoraRes = await fetchMeteoraDiscoveryAPI(signal, state.meteoraTimeframe, state.meteoraCategory);
+            meteoraRes = await fetchMeteoraDiscoveryAPI(signal, state.meteoraTimeframe, state.meteoraCategory);
             if (signal?.aborted) return;
 
             if (meteoraRes && Array.isArray(meteoraRes.data) && meteoraRes.data.length > 0) {
@@ -318,7 +319,7 @@ async function loadPools(force = false) {
                         tokenMint: tokenX.address,
                         altMint: tokenY.address,
                         feePct: baseFee,
-                        maxFeePct: Number(pool.max_fee_percentage ?? pool.dlmm_params?.max_fee_percentage ?? baseFee || 0),
+                        maxFeePct: Number(pool.max_fee_percentage ?? pool.dlmm_params?.max_fee_percentage ?? baseFee ?? 0),
                         vol24h: vol24h,
                         fees24h: fees24h,
                         tvl: tvl,
@@ -326,7 +327,13 @@ async function loadPools(force = false) {
                         logoUrl: tokenX.icon || `https://api.dicebear.com/9.x/identicon/svg?seed=${tokenX.address || index}&backgroundColor=1e1e1e`,
                         priceChange: priceTrendChange,
                         priceTrend: priceTrend,
-                        dexPrice: Number(tokenX.price || 0),
+                        dexPrice: Number(
+                            tokenX.price ??
+                            pool.price ??
+                            pool.current_price ??
+                            pool.token_x_price ??
+                            0
+                        ),
                         pairAddress: pool.pool_address,
                         ageHours: normalizeMeteoraAgeHours(pool),
                         isExternal: false,
@@ -420,7 +427,15 @@ async function loadPools(force = false) {
             });
         }
 
-        const validPools = mappedData.filter(p => state.pinnedTokens.has(p.address) || (p.dexPrice > 0 && p.vol24h >= 500 && p.tvl >= 1000 && p.isDLMM));
+        console.log('[Meteora] category:', state.meteoraCategory, 'timeframe:', state.meteoraTimeframe);
+        console.log('[Meteora] raw response:', meteoraRes);
+        console.log('[Meteora] mapped:', mappedData.length);
+
+        const validPools = mappedData.filter(p =>
+            state.pinnedTokens.has(p.address) ||
+            (p.address && p.vol24h >= 500 && p.tvl >= 1000 && p.isDLMM)
+        );
+        console.log('[Meteora] valid:', validPools.length);
         const uniquePoolsMap = new Map();
 
         validPools.forEach(p => {
@@ -434,6 +449,17 @@ async function loadPools(force = false) {
         if (finalUniquePools.length > 0) {
             state.poolsData = finalUniquePools;
             updateStaleBadge(false);
+        }
+
+        if (finalUniquePools.length === 0) {
+            if (statusArea) statusArea.style.display = 'none';
+            showInfoBox(
+                'Data Kosong',
+                `Tidak ada pool yang lolos filter untuk ${getMeteoraCategoryLabel()} ${getTimeframeLabel(state.meteoraTimeframe)}. Coba timeframe lain atau longgarkan filter.`,
+                true
+            );
+            renderList([]);
+            return;
         }
 
         if (state.currentView === 'meteora') applyFiltersAndRender();
@@ -652,6 +678,11 @@ window.openModal = openModal;
 window.togglePin = togglePin;
 window.changeMeteoraCategory = changeMeteoraCategory;
 window.changeMeteoraTimeframe = changeMeteoraTimeframe;
+Object.defineProperty(window, 'selectedPoolKey', {
+    get() {
+        return state.selectedPoolKey;
+    }
+});
 
 function getBestPriceChange(dex) {
     if (!dex || !dex.priceChange) return null;

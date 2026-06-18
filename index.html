@@ -35,6 +35,7 @@
             <div id="meteoraCategoryTabs" class="meteora-category-tabs" style="display: flex;" aria-label="Kategori Meteora">
                 <button id="btnMeteoraTop" class="meteora-category-btn active" type="button" onclick="changeMeteoraCategory('top')">🏆 Top Performa</button>
                 <button id="btnMeteoraTrending" class="meteora-category-btn" type="button" onclick="changeMeteoraCategory('trending')">🔥 Trending</button>
+                <button id="btnMeteoraNew" class="meteora-category-btn" type="button" onclick="changeMeteoraCategory('new')">🆕 New Token</button>
             </div>
             <select id="meteoraTimeframe" class="filter-select" onchange="changeMeteoraTimeframe(this.value)" style="display: block;" aria-label="Timeframe Meteora">
                 <option value="24h">24H</option>
@@ -46,7 +47,7 @@
                 <option value="5m">5M</option>
             </select>
             <select id="sortMeteora" class="filter-select" onchange="applyFiltersAndRender()" style="display: block;">
-                <option value="fees">💰 24H Fees Tertinggi</option>
+                <option value="fees">💰 Fees Tertinggi</option>
                 <option value="trend">🔥 Trend Default</option>
             </select>
         </div>
@@ -129,8 +130,8 @@
                             <div class="m-item"><div class="m-label">Avg Vol/Min</div><div class="m-val" id="dlmmAvgVolMin">—</div></div>
                             <div class="m-item"><div class="m-label">Traders</div><div class="m-val" id="dlmmTraders">—</div></div>
                             <div class="m-item"><div class="m-label">Swaps</div><div class="m-val" id="dlmmSwaps">—</div></div>
-                            <div class="m-item"><div class="m-label">24h Fees</div><div class="m-val text-green" id="dlmm24hFees">—</div></div>
-                            <div class="m-item"><div class="m-label">24h Fees/TVL</div><div class="m-val" id="dlmm24hFeesTVL">—</div></div>
+                            <div class="m-item"><div class="m-label" id="dlmmFeesLabel">24H Fees</div><div class="m-val text-green" id="dlmm24hFees">—</div></div>
+                            <div class="m-item"><div class="m-label" id="dlmmFeesTvlLabel">24H Fees/TVL</div><div class="m-val" id="dlmm24hFeesTVL">—</div></div>
                             <div class="m-item"><div class="m-label">Bin Step</div><div class="m-val text-blue" id="dlmmBinStep">—</div></div>
                             <div class="m-item"><div class="m-label">Base Fee</div><div class="m-val" id="dlmmBaseFee">—</div></div>
                             <div class="m-item"><div class="m-label">Dynamic Fee</div><div class="m-val" id="dlmmDynamicFee">—</div></div>

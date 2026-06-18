@@ -1,5 +1,5 @@
 import { state } from './config.js';
-import { safeExec, escapeHTML, formatAddress, formatMoney, formatPct, formatNum, formatAge } from './utils.js';
+import { safeExec, escapeHTML, formatAddress, formatMoney, formatPct, formatNum, formatAge, getTimeframeLabel, getTimeframeMinutes, normalizeMeteoraAgeHours } from './utils.js';
 import { computeAdvancedMetrics, getVolatilityProfile, buildStrategy } from './engine.js';
 import { fetchMeteoraAdvancedMetrics, fetchMeteoraNative, fetchRugCheckSecure, fetchGMGNTokenAnalysis, normalizeGMGNToken, createRequestManager } from './api.js';
 
@@ -47,6 +47,13 @@ export function safeSetText(id, text, colorClass = '') {
             if (colorClass) el.className = colorClass;
         }
     });
+}
+
+
+function getMeteoraCategoryLabelForUi() {
+    if (state.meteoraCategory === 'trending') return 'TRENDING';
+    if (state.meteoraCategory === 'new') return 'NEW TOKEN';
+    return 'TOP PERFORMA';
 }
 
 function formatDelta(value, digits = 2) {
@@ -118,6 +125,7 @@ export function renderList(dataToRender) {
     if (!dataToRender || dataToRender.length === 0) return;
 
     const batchRender = dataToRender.slice(0, 30);
+    const timeframeLabel = getTimeframeLabel(state.meteoraTimeframe);
     let bestBuyShown = false;
     let html = '';
     batchRender.forEach((pool, index) => {
@@ -162,8 +170,8 @@ export function renderList(dataToRender) {
                 </div>
             </div>
             <div class="pool-metrics">
-                <div class="metric-col"><div class="metric-label">${isAlpha ? 'Market Cap' : '24H Fees'}</div>${col1Html}</div>
-                <div class="metric-col"><div class="metric-label">Vol 24H</div><div class="metric-val text-primary">${pool.vol24h !== null ? formatMoney(pool.vol24h) : '—'}</div></div>
+                <div class="metric-col"><div class="metric-label">${isAlpha ? 'Market Cap' : `${timeframeLabel} Fees`}</div>${col1Html}</div>
+                <div class="metric-col"><div class="metric-label">${isAlpha ? 'Vol 24H' : `Vol ${timeframeLabel}`}</div><div class="metric-val text-primary">${pool.vol24h !== null ? formatMoney(pool.vol24h) : '—'}</div></div>
                 <div class="metric-col"><div class="metric-label">Price Trend</div><div class="metric-val ${trColor}">${isAlpha ? formatPct(pool.priceChange) : renderPriceTrendChart(pool.priceTrend, pool.priceChange)}</div></div>
             </div>
         </div>`;
@@ -254,10 +262,12 @@ export async function fillModalData(pool) {
     } else {
         if(elAlpha) elAlpha.style.display = 'none';
         if(elMeteora) elMeteora.style.display = 'block';
-        document.getElementById('dlmmLoading').innerText = '(Fetching real-time metrics...)';
+        document.getElementById('dlmmLoading').innerText = `(Fetching ${getMeteoraCategoryLabelForUi()} ${getTimeframeLabel(state.meteoraTimeframe)} metrics...)`;
+        safeSetText('dlmmFeesLabel', `${getTimeframeLabel(state.meteoraTimeframe)} Fees`);
+        safeSetText('dlmmFeesTvlLabel', `${getTimeframeLabel(state.meteoraTimeframe)} Fees/TVL`);
 
         Promise.all([
-            fetchMeteoraAdvancedMetrics(chartAddress),
+            fetchMeteoraAdvancedMetrics(chartAddress, null, state.meteoraTimeframe, state.meteoraCategory),
             fetchMeteoraNative(chartAddress)
         ]).then(([advRes, nativeRes]) => {
             if (state.modalSession !== modalSession) return;
@@ -272,31 +282,34 @@ export async function fillModalData(pool) {
             const natData = nativeRes || {};
 
             // PERBAIKAN KOSONG (—): Hapus blok 'if'. Selalu paksa render menggunakan data DexScreener (pool) sebagai pelampung jika Meteora gagal!
-            const activeTvl = Number(mtData?.active_tvl || pool.tvl || 0);
-            const fee24h = Number(mtData?.fee || natData?.fees_24h || pool.fees24h || 0);
-            const vol24h = Number(mtData?.volume || natData?.trade_volume_24h || pool.vol24h || 0);
-            const tvl = Number(mtData?.tvl || natData?.liquidity || pool.tvl || 0);
+            const activeTvl = Number(pool.dexData?.active_tvl ?? mtData?.active_tvl ?? pool.tvl ?? 0);
+            const fee24h = Number(pool.dexData?.fee ?? mtData?.fee ?? pool.fees24h ?? natData?.fees_24h ?? 0);
+            const vol24h = Number(pool.dexData?.volume ?? mtData?.volume ?? pool.vol24h ?? natData?.trade_volume_24h ?? 0);
+            const tvl = Number(pool.dexData?.tvl ?? mtData?.tvl ?? natData?.liquidity ?? pool.tvl ?? 0);
 
-            const binStep = Number(natData?.bin_step || mtData?.bin_step || pool.binStep || 0);
+            const binStep = Number(pool.dexData?.dlmm_params?.bin_step || pool.dexData?.bin_step || mtData?.dlmm_params?.bin_step || mtData?.bin_step || pool.binStep || natData?.bin_step || 0);
             const volatility = Number(mtData?.volatility || 0);
 
-            const baseFee = Number(natData?.base_fee_percentage ?? mtData?.base_fee_percentage ?? pool.feePct ?? 0);
+            const baseFee = Number(pool.dexData?.fee_pct ?? pool.dexData?.dlmm_params?.base_fee_percentage ?? natData?.base_fee_percentage ?? mtData?.fee_pct ?? mtData?.base_fee_percentage ?? pool.feePct ?? 0);
             const protocolFee = Number(natData?.protocol_fee_percentage ?? mtData?.protocol_fee_percentage ?? 0);
             const maxFee = Number(natData?.max_fee_percentage ?? mtData?.max_fee_percentage ?? pickFeePercent(mtData, pool) ?? 0);
             
-            const totalTradingFee = Number(natData?.current_fee_percentage ?? natData?.fee_percentage ?? mtData?.fee_percentage ?? baseFee);
+            const totalTradingFee = Number(pool.dexData?.dynamic_fee_pct ?? natData?.current_fee_percentage ?? natData?.fee_percentage ?? mtData?.dynamic_fee_pct ?? mtData?.fee_percentage ?? baseFee);
             const dynamicFee = totalTradingFee > baseFee
                 ? totalTradingFee - baseFee
-                : Number(natData?.dynamic_fee_percentage ?? mtData?.dynamic_fee_percentage ?? 0);
+                : Number(pool.dexData?.dynamic_fee_pct ?? natData?.dynamic_fee_percentage ?? mtData?.dynamic_fee_percentage ?? 0);
             
-            const exactFee = (num) => Number(num.toFixed(9)).toString() + '%';
+            const exactFee = (num) => {
+                const n = Number(num);
+                return Number.isFinite(n) ? Number(n.toFixed(9)).toString() + '%' : '—';
+            };
 
             // Hitung manual persentase jika server API Meteora sedang error
             const calcFeesActive = mtData?.fee_active_tvl_ratio !== undefined ? mtData.fee_active_tvl_ratio.toFixed(2) : (activeTvl > 0 ? (fee24h/activeTvl*100).toFixed(2) : 0);
             const calcVolActive = mtData?.volume_active_tvl_ratio !== undefined ? mtData.volume_active_tvl_ratio.toFixed(0) : (activeTvl > 0 ? (vol24h/activeTvl*100).toFixed(0) : 0);
 
-            safeSetText('dlmmAge', formatAge(pool.ageHours));
-            safeSetText('dlmmVolat', volatility.toFixed(2) + '%');
+            safeSetText('dlmmAge', formatAge(pool.ageHours ?? normalizeMeteoraAgeHours(pool.dexData || {})));
+            safeSetText('dlmmVolat', Number.isFinite(volatility) ? volatility.toFixed(2) + '%' : '—');
             safeSetText('dlmmActiveTVL', `${formatMoney(activeTvl)}${formatDelta(mtData?.active_tvl_change_percent ?? mtData?.active_tvl_change, 1)}`);
             safeSetText('dlmmFeesActive', `${calcFeesActive}%${formatDelta(mtData?.fee_active_tvl_ratio_change_percent ?? mtData?.fee_active_tvl_ratio_change)}`);
             safeSetText('dlmmVolActive', `${calcVolActive}%${formatDelta(mtData?.volume_active_tvl_ratio_change_percent ?? mtData?.volume_active_tvl_ratio_change)}`);
@@ -304,12 +317,13 @@ export async function fillModalData(pool) {
             safeSetText('dlmmNewLPs', `${formatNum(natData?.new_lps ?? mtData?.new_lps ?? 0)}${formatDelta(natData?.new_lps_change_percent ?? mtData?.new_lps_change_percent ?? mtData?.new_lps_change)}`);
             safeSetText('dlmmOpenPos', formatNum(mtData?.open_positions || 0));
             safeSetText('dlmmInRange', `${formatNum(mtData?.active_positions || 0)}${formatDelta(mtData?.active_positions_change_percent ?? mtData?.active_positions_change)}`);
-            safeSetText('dlmmAvgFeeMin', formatMoney(fee24h / 1440));
-            safeSetText('dlmmAvgVolMin', formatMoney(vol24h / 1440));
+            const timeframeMinutes = getTimeframeMinutes(state.meteoraTimeframe);
+            safeSetText('dlmmAvgFeeMin', formatMoney(fee24h / timeframeMinutes));
+            safeSetText('dlmmAvgVolMin', formatMoney(vol24h / timeframeMinutes));
             safeSetText('dlmmTraders', formatNum(mtData?.unique_traders || 0));
             safeSetText('dlmmSwaps', formatNum(mtData?.swap_count || 0));
             safeSetText('dlmm24hFees', formatMoney(fee24h), "m-val text-green");
-            safeSetText('dlmm24hFeesTVL', tvl > 0 ? (fee24h / tvl * 100).toFixed(2) + '%' : '—');
+            safeSetText('dlmm24hFeesTVL', tvl > 0 && Number.isFinite(fee24h) ? (fee24h / tvl * 100).toFixed(2) + '%' : '—');
             safeSetText('dlmmBinStep', binStep, "m-val text-blue");
             safeSetText('dlmmBaseFee', exactFee(baseFee));
             safeSetText('dlmmDynamicFee', exactFee(dynamicFee));

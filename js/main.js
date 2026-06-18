@@ -90,10 +90,14 @@ function getReadableApiError(err) {
     return 'Gagal memuat data dari agregator.';
 }
 
-function changeMeteoraTimeframe(timeframe) {
+function changeMeteoraTimeframe(selection) {
     const allowedTimeframes = new Set(['24h', '12h', '4h', '2h', '1h', '30m', '5m']);
-    if (!allowedTimeframes.has(timeframe) || state.meteoraTimeframe === timeframe) return;
+    const [rawCategory, rawTimeframe] = String(selection || '').includes(':') ? String(selection).split(':') : ['top', selection];
+    const category = rawCategory === 'trending' ? 'trending' : 'top';
+    const timeframe = allowedTimeframes.has(rawTimeframe) ? rawTimeframe : '24h';
+    if (state.meteoraCategory === category && state.meteoraTimeframe === timeframe) return;
 
+    state.meteoraCategory = category;
     state.meteoraTimeframe = timeframe;
     state.poolsData = [];
     state.lastMeteoraFetch = 0;
@@ -241,7 +245,8 @@ async function loadPools(force = false) {
     const statusArea = document.getElementById('statusArea');
     if (state.poolsData.length === 0) {
         statusArea.style.display = 'block';
-        statusArea.innerText = `Mengakses TOP PERFORMA Meteora ${state.meteoraTimeframe}...`;
+        const categoryLabel = state.meteoraCategory === 'trending' ? 'TRENDING' : 'TOP PERFORMA';
+        statusArea.innerText = `Mengakses ${categoryLabel} Meteora ${state.meteoraTimeframe}...`;
     }
 
     try {
@@ -249,8 +254,9 @@ async function loadPools(force = false) {
         let useFallback = false;
 
         try {
-            statusArea.innerText = `Memanggil API TOP PERFORMA Meteora (${state.meteoraTimeframe})...`;
-            const meteoraRes = await fetchMeteoraDiscoveryAPI(signal, state.meteoraTimeframe);
+            const categoryLabel = state.meteoraCategory === 'trending' ? 'TRENDING' : 'TOP PERFORMA';
+            statusArea.innerText = `Memanggil API ${categoryLabel} Meteora (${state.meteoraTimeframe})...`;
+            const meteoraRes = await fetchMeteoraDiscoveryAPI(signal, state.meteoraTimeframe, state.meteoraCategory);
             if (signal?.aborted) return;
 
             if (meteoraRes && Array.isArray(meteoraRes.data) && meteoraRes.data.length > 0) {
@@ -263,6 +269,10 @@ async function loadPools(force = false) {
                     const tvl = Number(pool.tvl || pool.liquidity || 0);
                     const fees24h = Number(pool.fee || pool.fees_24h || 0);
                     const baseFee = Number(pool.base_fee_percentage || 0.3); // fallback standar 0.3%
+                    const priceTrend = Array.isArray(pool.price_trend) ? pool.price_trend.map(Number).filter(Number.isFinite) : [];
+                    const trendStart = priceTrend.find(v => v > 0);
+                    const trendEnd = priceTrend.length > 0 ? priceTrend[priceTrend.length - 1] : null;
+                    const priceTrendChange = trendStart && Number.isFinite(trendEnd) ? ((trendEnd - trendStart) / trendStart) * 100 : 0;
                     
                     const newPool = {
                         name: pool.name || `${tokenX.symbol || 'UN'}/${tokenY.symbol || 'KN'}`,
@@ -276,7 +286,8 @@ async function loadPools(force = false) {
                         tvl: tvl,
                         dexData: pool, 
                         logoUrl: tokenX.icon || `https://api.dicebear.com/9.x/identicon/svg?seed=${tokenX.address || index}&backgroundColor=1e1e1e`,
-                        priceChange: 0, 
+                        priceChange: priceTrendChange,
+                        priceTrend: priceTrend,
                         dexPrice: Number(tokenX.price || 0),
                         pairAddress: pool.pool_address,
                         ageHours: pool.created_at ? (Date.now() - (pool.created_at * 1000)) / 3600000 : null,
@@ -358,6 +369,7 @@ async function loadPools(force = false) {
                     dexData: dex,
                     logoUrl: dex.info?.imageUrl || dex.baseToken?.logoURI || `https://api.dicebear.com/9.x/identicon/svg?seed=${tokenMint || index}&backgroundColor=1e1e1e`,
                     priceChange: getBestPriceChange(dex),
+                    priceTrend: [],
                     dexPrice: Number(dex.priceUsd || 0),
                     pairAddress: dex.pairAddress,
                     ageHours: dex.pairCreatedAt ? (Date.now() - dex.pairCreatedAt) / 3600000 : null,

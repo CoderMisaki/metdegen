@@ -32,6 +32,7 @@ export const state = {
     apiCache: new Map(),
     gmgnCache: new Map(),
     meteoraTimeframe: '24h',
+    meteoraCategory: 'top',
     isRefreshing: false,
     modalSession: 0
 };

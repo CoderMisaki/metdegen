@@ -74,6 +74,11 @@ body { background-color: var(--bg-main); color: var(--text-primary); -webkit-fon
 .metric-label { font-size: 10px; color: var(--text-tertiary); text-transform: uppercase; margin-bottom: 4px; font-weight: 600; }
 .metric-val { font-size: 14px; font-weight: 600; }
 .metric-small { font-size: 12px; font-weight: 600; }
+.price-trend-chart { display: inline-flex; flex-direction: column; align-items: flex-end; gap: 2px; min-width: 74px; font-size: 10px; line-height: 1; }
+.price-trend-chart svg { width: 74px; height: 28px; display: block; overflow: visible; }
+.price-trend-chart.up { color: var(--accent-green); }
+.price-trend-chart.down { color: var(--accent-red); }
+.price-trend-empty { color: var(--text-secondary); }
 
 /* Meteora Specific Grid */
 .meteora-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; background-color: var(--bg-main); padding: 12px; border-radius: 12px; border: 1px solid var(--border-color); }

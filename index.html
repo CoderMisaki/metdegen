@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css?v=4">
+    <link rel="stylesheet" href="css/style.css?v=5">
 </head>
 <body>
 
@@ -32,25 +32,18 @@
         <div class="filters" id="filterContainer">
             <button id="btnMeteora" class="filter-btn active" onclick="switchView('meteora')">💧 Meteora DLMM</button>
             <button id="btnAlpha" class="filter-btn" onclick="switchView('alpha')">🎯 Signal Alpha</button>
-            <select id="topPerformanceTimeframe" class="filter-select" onchange="changeMeteoraTimeframe(this.value)" style="display: block;" aria-label="TOP PERFORMA timeframe">
-                <optgroup label="🏆 TOP PERFORMA">
-                    <option value="top:24h">TOP PERFORMA 24H</option>
-                    <option value="top:12h">TOP PERFORMA 12H</option>
-                    <option value="top:4h">TOP PERFORMA 4H</option>
-                    <option value="top:2h">TOP PERFORMA 2H</option>
-                    <option value="top:1h">TOP PERFORMA 1H</option>
-                    <option value="top:30m">TOP PERFORMA 30M</option>
-                    <option value="top:5m">TOP PERFORMA 5M</option>
-                </optgroup>
-                <optgroup label="🔥 TRENDING">
-                    <option value="trending:24h">TRENDING 24H</option>
-                    <option value="trending:12h">TRENDING 12H</option>
-                    <option value="trending:4h">TRENDING 4H</option>
-                    <option value="trending:2h">TRENDING 2H</option>
-                    <option value="trending:1h">TRENDING 1H</option>
-                    <option value="trending:30m">TRENDING 30M</option>
-                    <option value="trending:5m">TRENDING 5M</option>
-                </optgroup>
+            <div id="meteoraCategoryTabs" class="meteora-category-tabs" style="display: flex;" aria-label="Kategori Meteora">
+                <button id="btnMeteoraTop" class="meteora-category-btn active" type="button" onclick="changeMeteoraCategory('top')">🏆 Top Performa</button>
+                <button id="btnMeteoraTrending" class="meteora-category-btn" type="button" onclick="changeMeteoraCategory('trending')">🔥 Trending</button>
+            </div>
+            <select id="meteoraTimeframe" class="filter-select" onchange="changeMeteoraTimeframe(this.value)" style="display: block;" aria-label="Timeframe Meteora">
+                <option value="24h">24H</option>
+                <option value="12h">12H</option>
+                <option value="4h">4H</option>
+                <option value="2h">2H</option>
+                <option value="1h">1H</option>
+                <option value="30m">30M</option>
+                <option value="5m">5M</option>
             </select>
             <select id="sortMeteora" class="filter-select" onchange="applyFiltersAndRender()" style="display: block;">
                 <option value="fees">💰 24H Fees Tertinggi</option>
@@ -186,6 +179,6 @@
 
     <div id="toast" class="toast">Notifikasi</div>
 
-    <script type="module" src="js/main.js?v=4"></script>
+    <script type="module" src="js/main.js?v=5"></script>
 </body>
 </html>

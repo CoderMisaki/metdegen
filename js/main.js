@@ -90,20 +90,52 @@ function getReadableApiError(err) {
     return 'Gagal memuat data dari agregator.';
 }
 
-function changeMeteoraTimeframe(selection) {
-    const allowedTimeframes = new Set(['24h', '12h', '4h', '2h', '1h', '30m', '5m']);
-    const [rawCategory, rawTimeframe] = String(selection || '').includes(':') ? String(selection).split(':') : ['top', selection];
-    const category = rawCategory === 'trending' ? 'trending' : 'top';
-    const timeframe = allowedTimeframes.has(rawTimeframe) ? rawTimeframe : '24h';
-    if (state.meteoraCategory === category && state.meteoraTimeframe === timeframe) return;
+const METEORA_TIMEFRAMES = new Set(['24h', '12h', '4h', '2h', '1h', '30m', '5m']);
+const METEORA_CATEGORIES = new Set(['top', 'trending']);
 
-    state.meteoraCategory = category;
-    state.meteoraTimeframe = timeframe;
+function getMeteoraCategoryLabel() {
+    return state.meteoraCategory === 'trending' ? 'TRENDING' : 'TOP PERFORMA';
+}
+
+function updateMeteoraCategoryButtons() {
+    const topBtn = document.getElementById('btnMeteoraTop');
+    const trendingBtn = document.getElementById('btnMeteoraTrending');
+    if (topBtn) topBtn.classList.toggle('active', state.meteoraCategory === 'top');
+    if (trendingBtn) trendingBtn.classList.toggle('active', state.meteoraCategory === 'trending');
+}
+
+function resetMeteoraAndReload() {
+    if (state.ctrlMeteora) state.ctrlMeteora.abort();
+    state.isMeteoraLoading = false;
     state.poolsData = [];
     state.lastMeteoraFetch = 0;
+    document.getElementById('poolList').innerHTML = '';
+
+    const statusArea = document.getElementById('statusArea');
+    if (statusArea) {
+        statusArea.style.display = 'block';
+        statusArea.innerText = `Mengakses ${getMeteoraCategoryLabel()} Meteora ${state.meteoraTimeframe}...`;
+    }
 
     if (state.currentView !== 'meteora') switchView('meteora');
     loadPools(true);
+}
+
+function changeMeteoraCategory(category) {
+    const nextCategory = METEORA_CATEGORIES.has(category) ? category : 'top';
+    if (state.meteoraCategory === nextCategory) return;
+
+    state.meteoraCategory = nextCategory;
+    updateMeteoraCategoryButtons();
+    resetMeteoraAndReload();
+}
+
+function changeMeteoraTimeframe(timeframe) {
+    const nextTimeframe = METEORA_TIMEFRAMES.has(timeframe) ? timeframe : '24h';
+    if (state.meteoraTimeframe === nextTimeframe) return;
+
+    state.meteoraTimeframe = nextTimeframe;
+    resetMeteoraAndReload();
 }
 
 function switchView(view) {
@@ -123,13 +155,16 @@ function switchView(view) {
     document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active')); 
     const statusArea = document.getElementById('statusArea'); 
     const sortMeteora = document.getElementById('sortMeteora'); 
-    const topPerformanceTimeframe = document.getElementById('topPerformanceTimeframe');
+    const meteoraTimeframe = document.getElementById('meteoraTimeframe');
+    const meteoraCategoryTabs = document.getElementById('meteoraCategoryTabs');
     
     if(view === 'meteora') { 
         document.getElementById('btnMeteora').classList.add('active'); 
         document.getElementById('colFeeBin').innerText = "24H Fees"; 
         sortMeteora.style.display = 'block'; 
-        if (topPerformanceTimeframe) topPerformanceTimeframe.style.display = 'block';
+        if (meteoraTimeframe) meteoraTimeframe.style.display = 'block';
+        if (meteoraCategoryTabs) meteoraCategoryTabs.style.display = 'flex';
+        updateMeteoraCategoryButtons();
         if (state.poolsData.length === 0) { 
             statusArea.style.display = 'block'; 
             statusArea.innerText = 'Menjalankan Radar Meteora DLMM...'; 
@@ -142,7 +177,8 @@ function switchView(view) {
         document.getElementById('btnAlpha').classList.add('active'); 
         document.getElementById('colFeeBin').innerText = "Market Cap"; 
         sortMeteora.style.display = 'none'; 
-        if (topPerformanceTimeframe) topPerformanceTimeframe.style.display = 'none';
+        if (meteoraTimeframe) meteoraTimeframe.style.display = 'none';
+        if (meteoraCategoryTabs) meteoraCategoryTabs.style.display = 'none';
         if (state.alphaData.length === 0) { 
             statusArea.style.display = 'block'; 
             statusArea.innerText = 'Algoritma mengekstrak data pasar organik (Filter Ketat USD Buy > Sell)...'; 
@@ -245,8 +281,7 @@ async function loadPools(force = false) {
     const statusArea = document.getElementById('statusArea');
     if (state.poolsData.length === 0) {
         statusArea.style.display = 'block';
-        const categoryLabel = state.meteoraCategory === 'trending' ? 'TRENDING' : 'TOP PERFORMA';
-        statusArea.innerText = `Mengakses ${categoryLabel} Meteora ${state.meteoraTimeframe}...`;
+        statusArea.innerText = `Mengakses ${getMeteoraCategoryLabel()} Meteora ${state.meteoraTimeframe}...`;
     }
 
     try {
@@ -254,8 +289,7 @@ async function loadPools(force = false) {
         let useFallback = false;
 
         try {
-            const categoryLabel = state.meteoraCategory === 'trending' ? 'TRENDING' : 'TOP PERFORMA';
-            statusArea.innerText = `Memanggil API ${categoryLabel} Meteora (${state.meteoraTimeframe})...`;
+            statusArea.innerText = `Memanggil API ${getMeteoraCategoryLabel()} Meteora (${state.meteoraTimeframe})...`;
             const meteoraRes = await fetchMeteoraDiscoveryAPI(signal, state.meteoraTimeframe, state.meteoraCategory);
             if (signal?.aborted) return;
 
@@ -610,6 +644,7 @@ window.applyFiltersAndRender = applyFiltersAndRender;
 window.closeModal = closeModal;
 window.openModal = openModal;
 window.togglePin = togglePin;
+window.changeMeteoraCategory = changeMeteoraCategory;
 window.changeMeteoraTimeframe = changeMeteoraTimeframe;
 
 function getBestPriceChange(dex) {

@@ -125,7 +125,7 @@ export async function fetchWithCache(url, ttl = 60000, signal = null) {
 
 // ==== METEORA APIs ====
 const METEORA_TOP_PERFORMANCE_TIMEFRAMES = new Set(['24h', '12h', '4h', '2h', '1h', '30m', '5m']);
-const METEORA_DISCOVERY_CATEGORIES = new Set(['top', 'trending']);
+const METEORA_DISCOVERY_CATEGORIES = new Set(['top', 'trending', 'new']);
 const METEORA_TOP_PERFORMANCE_FILTER = 'base_token_market_cap%3E%3D50000%26%26base_token_holders%3E%3D10%26%26volume%3E%3D500%26%26active_tvl%3E%3D2000';
 
 export async function fetchMeteoraDiscoveryAPI(signal = null, timeframe = '24h', category = 'top') {
@@ -135,11 +135,13 @@ export async function fetchMeteoraDiscoveryAPI(signal = null, timeframe = '24h',
     return fetchWithCache(`https://pool-discovery-api.datapi.meteora.ag/pools?${query}`, 45000, signal);
 }
 
-export async function fetchMeteoraAdvancedMetrics(poolAddress, signal = null) {
+export async function fetchMeteoraAdvancedMetrics(poolAddress, signal = null, timeframe = state.meteoraTimeframe, category = state.meteoraCategory) {
     if (!poolAddress) return null;
-    // PERBAIKAN: Kembali gunakan filter_by, JANGAN search!
-    const url = `https://pool-discovery-api.datapi.meteora.ag/pools?filter_by=pool_address%3D${poolAddress}&page_size=1`;
-    return fetchWithCache(url, 30000, signal);
+    const safeTimeframe = METEORA_TOP_PERFORMANCE_TIMEFRAMES.has(timeframe) ? timeframe : '24h';
+    const safeCategory = METEORA_DISCOVERY_CATEGORIES.has(category) ? category : 'top';
+    const filter = encodeURIComponent(`pool_address=${poolAddress}`);
+    const query = `page_size=1&timeframe=${safeTimeframe}&category=${safeCategory}&filter_by=${filter}`;
+    return fetchWithCache(`https://pool-discovery-api.datapi.meteora.ag/pools?${query}`, 30000, signal);
 }
 
 export async function fetchMeteoraNative(pairAddress) {

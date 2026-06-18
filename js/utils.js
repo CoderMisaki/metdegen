@@ -76,3 +76,31 @@ export function formatAge(hours) {
     const h = Math.floor(hours % 24);
     return h > 0 ? `${totalDays}d ${h}h` : `${totalDays}d`;
 }
+
+
+export function getTimeframeLabel(tf) {
+    if (tf === '5m') return '5M';
+    if (tf === '30m') return '30M';
+    if (tf === '1h') return '1H';
+    if (tf === '2h') return '2H';
+    if (tf === '4h') return '4H';
+    if (tf === '12h') return '12H';
+    return '24H';
+}
+
+export function getTimeframeMinutes(timeframe) {
+    if (timeframe === '5m') return 5;
+    if (timeframe === '30m') return 30;
+    if (timeframe === '1h') return 60;
+    if (timeframe === '2h') return 120;
+    if (timeframe === '4h') return 240;
+    if (timeframe === '12h') return 720;
+    return 1440;
+}
+
+export function normalizeMeteoraAgeHours(pool = {}) {
+    const tokenX = pool.token_x || {};
+    const createdAt = Number(pool.pool_created_at || pool.created_at || tokenX.created_at || 0);
+    const createdMs = createdAt > 1e12 ? createdAt : createdAt * 1000;
+    return createdMs ? (Date.now() - createdMs) / 3600000 : null;
+}

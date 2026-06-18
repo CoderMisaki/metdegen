@@ -1,4 +1,4 @@
-import { state, MAX_CACHE } from './config.js';
+import { state, MAX_CACHE, REALTIME_CONFIG } from './config.js';
 import { isValidSolAddress } from './utils.js';
 
 function createHttpError(status, url, body = '') {
@@ -70,8 +70,10 @@ export function json(res, status, payload) {
 
 export async function fetchWithCache(url, ttl = 60000, signal = null) {
     const now = Date.now();
-    const cached = state.apiCache.get(url);
-    if (cached && (now - cached.time < ttl)) { return cached.data; }
+    const useMemoryCache = Number(ttl) > 0;
+
+    const cached = useMemoryCache ? state.apiCache.get(url) : null;
+    if (cached && (now - cached.time < ttl)) return cached.data;
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(new Error('Request timeout')), 15000);
     let abortListener = null;
@@ -103,7 +105,9 @@ export async function fetchWithCache(url, ttl = 60000, signal = null) {
                 const text = await res.text();
                 if (!text || !text.trim()) { throw new Error(`Empty response from ${url}`); }
                 const data = safeJsonParse(text, url);
-                cacheSet(state.apiCache, url, { data, time: now });
+                if (useMemoryCache) {
+                    cacheSet(state.apiCache, url, { data, time: Date.now() });
+                }
                 return data;
             } catch (err) {
                 lastErr = err;
@@ -123,16 +127,30 @@ export async function fetchWithCache(url, ttl = 60000, signal = null) {
     }
 }
 
+function withCacheBuster(url) {
+    const u = new URL(url, window.location.origin);
+    u.searchParams.set('_rt', Date.now().toString());
+    return u.toString();
+}
+
 // ==== METEORA APIs ====
 const METEORA_TOP_PERFORMANCE_TIMEFRAMES = new Set(['24h', '12h', '4h', '2h', '1h', '30m', '5m']);
 const METEORA_DISCOVERY_CATEGORIES = new Set(['top', 'trending', 'new']);
 const METEORA_TOP_PERFORMANCE_FILTER = 'base_token_market_cap%3E%3D50000%26%26base_token_holders%3E%3D10%26%26volume%3E%3D500%26%26active_tvl%3E%3D2000';
 
-export async function fetchMeteoraDiscoveryAPI(signal = null, timeframe = '24h', category = 'top') {
+export async function fetchMeteoraDiscoveryAPI(signal = null, timeframe = '24h', category = 'top', options = {}) {
     const safeTimeframe = METEORA_TOP_PERFORMANCE_TIMEFRAMES.has(timeframe) ? timeframe : '24h';
     const safeCategory = METEORA_DISCOVERY_CATEGORIES.has(category) ? category : 'top';
+    const realtime = options.realtime === true;
+
     const query = `page_size=50&timeframe=${safeTimeframe}&category=${safeCategory}&filter_by=${METEORA_TOP_PERFORMANCE_FILTER}`;
-    return fetchWithCache(`https://pool-discovery-api.datapi.meteora.ag/pools?${query}`, 45000, signal);
+    let url = `https://pool-discovery-api.datapi.meteora.ag/pools?${query}`;
+
+    if (realtime && REALTIME_CONFIG.enableMeteoraCacheBuster) {
+        url = withCacheBuster(url);
+    }
+
+    return fetchWithCache(url, realtime ? REALTIME_CONFIG.meteoraDiscoveryTtlMs : 45000, signal);
 }
 
 export async function fetchMeteoraAdvancedMetrics(poolAddress, signal = null, timeframe = state.meteoraTimeframe, category = state.meteoraCategory) {

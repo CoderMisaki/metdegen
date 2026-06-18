@@ -1,6 +1,13 @@
 export const SYSTEM_CODENAME = "Masako_Alpha_Engine_v20"; 
 export const MAX_CACHE = 300;
 
+export const REALTIME_CONFIG = {
+    meteoraRefreshMs: 7000,
+    meteoraMinRefreshGapMs: 5000,
+    meteoraDiscoveryTtlMs: 0,
+    enableMeteoraCacheBuster: true
+};
+
 export const IGNORED_MINTS = new Set([
     'So11111111111111111111111111111111111111112',
     'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
@@ -28,6 +35,7 @@ export const state = {
     ctrlAlpha: null,
     ctrlSearch: null,
     lastMeteoraFetch: 0,
+    lastMeteoraUpdatedAt: 0,
     lastAlphaFetch: 0,
     apiCache: new Map(),
     gmgnCache: new Map(),

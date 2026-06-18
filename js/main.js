@@ -1,4 +1,4 @@
-import { state, MAX_CACHE, IGNORED_MINTS } from './config.js';
+import { state, MAX_CACHE, IGNORED_MINTS, REALTIME_CONFIG } from './config.js';
 import { isValidSolAddress, normalizeAddressInput, getTimeframeLabel, normalizeMeteoraAgeHours } from './utils.js';
 import { fetchWithCache, fetchPinnedTokens, fetchMeteoraDiscoveryAPI } from './api.js';
 import { getDLMMInfoFromLabels, computeAdvancedMetrics, computeAlphaScore } from './engine.js';
@@ -76,6 +76,20 @@ function togglePin(address, event) {
             modalPin.innerHTML = isPinned ? `<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="currentColor" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>` : `<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>`;
         }
     }
+}
+
+
+function updateLastUpdateText() {
+    const el = document.getElementById('lastUpdateText');
+    if (!el || !state.lastMeteoraUpdatedAt) return;
+
+    const time = new Date(state.lastMeteoraUpdatedAt).toLocaleTimeString('id-ID', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+    });
+
+    el.innerText = `Last update: ${time}`;
 }
 
 function getReadableApiError(err) {
@@ -273,7 +287,7 @@ async function fetchSearchDirectly(q) {
 async function loadPools(force = false) {
     if (state.isMeteoraLoading || state.currentView !== 'meteora') return;
 
-    if (!force && Date.now() - state.lastMeteoraFetch < 15000) return;
+    if (!force && Date.now() - state.lastMeteoraFetch < REALTIME_CONFIG.meteoraMinRefreshGapMs) return;
     state.lastMeteoraFetch = Date.now();
     state.isMeteoraLoading = true;
     hideInfoBox();
@@ -295,7 +309,12 @@ async function loadPools(force = false) {
 
         try {
             statusArea.innerText = `Memanggil API ${getMeteoraCategoryLabel()} Meteora (${getTimeframeLabel(state.meteoraTimeframe)})...`;
-            meteoraRes = await fetchMeteoraDiscoveryAPI(signal, state.meteoraTimeframe, state.meteoraCategory);
+            meteoraRes = await fetchMeteoraDiscoveryAPI(
+                signal,
+                state.meteoraTimeframe,
+                state.meteoraCategory,
+                { realtime: true }
+            );
             if (signal?.aborted) return;
 
             if (meteoraRes && Array.isArray(meteoraRes.data) && meteoraRes.data.length > 0) {
@@ -448,6 +467,8 @@ async function loadPools(force = false) {
 
         if (finalUniquePools.length > 0) {
             state.poolsData = finalUniquePools;
+            state.lastMeteoraUpdatedAt = Date.now();
+            updateLastUpdateText();
             updateStaleBadge(false);
         }
 
@@ -655,7 +676,7 @@ function startAutoRefresh() {
         } finally {
             state.isRefreshing = false;
         }
-    }, 30000);
+    }, REALTIME_CONFIG.meteoraRefreshMs);
 }
 
 function startCacheCleanup() {
@@ -704,7 +725,7 @@ document.addEventListener('DOMContentLoaded', () => {
 document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") {
         const now = Date.now();
-        if (state.currentView === 'meteora' && now - state.lastMeteoraFetch > 30000) loadPools();
+        if (state.currentView === 'meteora' && now - state.lastMeteoraFetch > REALTIME_CONFIG.meteoraRefreshMs) loadPools();
         else if (state.currentView === 'alpha' && now - state.lastAlphaFetch > 30000) fetchAlphaSignals();
     }
 });

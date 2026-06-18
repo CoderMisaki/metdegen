@@ -1,6 +1,6 @@
 import { state, MAX_CACHE, IGNORED_MINTS } from './config.js';
 import { isValidSolAddress, normalizeAddressInput } from './utils.js';
-import { fetchWithCache, fetchPinnedTokens, fetchGMGNTrending, normalizeGMGNTrending, fetchMeteoraDiscoveryAPI } from './api.js';
+import { fetchWithCache, fetchPinnedTokens, fetchMeteoraDiscoveryAPI } from './api.js';
 import { getDLMMInfoFromLabels, computeAdvancedMetrics, computeAlphaScore } from './engine.js';
 import { updateStaleBadge, showInfoBox, hideInfoBox, showToast, renderList, fillModalData, openModal, closeModal } from './ui.js';
 
@@ -90,82 +90,16 @@ function getReadableApiError(err) {
     return 'Gagal memuat data dari agregator.';
 }
 
-function getTrendingAddress(item) {
-    return String(item?.mint || item?.address || item?.tokenAddress || item?.wallet || item?.owner || item?.baseToken?.address || item?.token_mint || '').trim();
-}
+function changeMeteoraTimeframe(timeframe) {
+    const allowedTimeframes = new Set(['24h', '12h', '4h', '2h', '1h', '30m', '5m']);
+    if (!allowedTimeframes.has(timeframe) || state.meteoraTimeframe === timeframe) return;
 
-function buildAlphaFromDexPair(pair, index) {
-    return {
-        name: `${pair.baseToken?.symbol || 'UN'}/${pair.quoteToken?.symbol || 'KN'}`,
-        address: pair.pairAddress || '',
-        tokenMint: pair.baseToken?.address || '',
-        altMint: pair.quoteToken?.address || '',
-        feePct: null, maxFeePct: null, currentFeePct: null, binStep: null, isDLMM: false,
-        vol24h: Number(pair.volume?.h24 || 0), fees24h: null, tvl: Number(pair.liquidity?.usd || 0), price: Number(pair.priceUsd || 0),
-        dexData: pair, logoUrl: pair.info?.imageUrl || pair.baseToken?.logoURI || `https://api.dicebear.com/9.x/identicon/svg?seed=${pair.baseToken?.address || index}&backgroundColor=1e1e1e`,
-        priceChange: getBestPriceChange(pair), dexPrice: Number(pair.priceUsd || 0), pairAddress: pair.pairAddress || '',
-        ageHours: pair.pairCreatedAt ? (Date.now() - pair.pairCreatedAt) / 3600000 : null,
-        isExternal: true, rank: 0, trueRank: index + 1
-    };
-}
+    state.meteoraTimeframe = timeframe;
+    state.poolsData = [];
+    state.lastMeteoraFetch = 0;
 
-async function toggleGMGNTrench() {
-    state.gmgnTrenchMode = !state.gmgnTrenchMode;
-
-    const btn = document.getElementById('btnGMGNTrench'); 
-    if (btn) btn.classList.toggle('active', state.gmgnTrenchMode); 
-    
-    if (!state.gmgnTrenchMode) { 
-        state.alphaData = state.alphaBaseData.map(p => ({ ...p })); 
-        showInfoBox('GMGN Trench Off', 'Mode trench dimatikan. Menampilkan semua signal Alpha.'); 
-        applyFiltersAndRender(); return; 
-    } 
-    
-    if (state.currentView !== 'alpha') switchView('alpha'); 
-    const statusArea = document.getElementById('statusArea'); 
-    statusArea.style.display = 'block'; 
-    statusArea.innerText = 'Mengambil GMGN trenches lalu enrichment DexScreener...'; 
-    
-    if (state.ctrlAlpha) state.ctrlAlpha.abort(); 
-    state.ctrlAlpha = new AbortController(); 
-    const signal = state.ctrlAlpha.signal; 
-    
-    try { 
-        const trenchRes = await fetchGMGNTrending({ mode: 'trench', limit: 80 }, signal); 
-        if (signal?.aborted) return; 
-        const trenchList = normalizeGMGNTrending(trenchRes); 
-        const mints = [...new Set(trenchList.map(getTrendingAddress).filter(Boolean))]; 
-        if (mints.length === 0) throw new Error('GMGN trench list empty'); 
-        
-        const pairs = []; 
-        for (let i = 0; i < mints.length; i += 30) { 
-            const chunk = mints.slice(i, i + 30).join(','); 
-            const dexRes = await fetchWithCache(`https://api.dexscreener.com/latest/dex/tokens/${chunk}`, 30000, signal).catch(() => null); 
-            if (signal?.aborted) return; 
-            if (dexRes?.pairs && Array.isArray(dexRes.pairs)) { pairs.push(...dexRes.pairs.filter(p => p.chainId === 'solana')); } 
-        } 
-        const uniq = Array.from(new Map(pairs.map(p => [p.pairAddress, p])).values()); 
-        const built = uniq.map((pair, i) => buildAlphaFromDexPair(pair, i)).filter(p => p.address); 
-        if (built.length === 0) throw new Error('GMGN trenches found, but DexScreener enrichment returned empty'); 
-        
-        const totalVol = built.reduce((sum, p) => sum + (p.vol24h || 0), 0); 
-        const avgVol = built.length > 0 ? totalVol / built.length : 0; 
-        built.forEach(p => p.sniperScore = computeAlphaScore(p, avgVol)); 
-        built.sort((a, b) => (b.sniperScore || 0) - (a.sniperScore || 0)); 
-        
-        state.alphaBaseData = built.map(p => ({ ...p })); 
-        state.alphaData = built.map(p => ({ ...p })); 
-        showInfoBox('GMGN Trench Active', `Mode trench aktif. ${built.length} token berhasil dibangun dari GMGN trenches.`, false); 
-        applyFiltersAndRender(); 
-    } catch (e) { 
-        showInfoBox('GMGN Trench Error', `Gagal memuat trench GMGN: ${e.message}`, true); 
-        state.gmgnTrenchMode = false; 
-        if (btn) btn.classList.remove('active'); 
-        state.alphaData = state.alphaBaseData.map(p => ({ ...p })); 
-        applyFiltersAndRender(); 
-    } finally { 
-        statusArea.style.display = 'none'; 
-    }
+    if (state.currentView !== 'meteora') switchView('meteora');
+    loadPools(true);
 }
 
 function switchView(view) {
@@ -185,11 +119,13 @@ function switchView(view) {
     document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active')); 
     const statusArea = document.getElementById('statusArea'); 
     const sortMeteora = document.getElementById('sortMeteora'); 
+    const topPerformanceTimeframe = document.getElementById('topPerformanceTimeframe');
     
     if(view === 'meteora') { 
         document.getElementById('btnMeteora').classList.add('active'); 
         document.getElementById('colFeeBin').innerText = "24H Fees"; 
         sortMeteora.style.display = 'block'; 
+        if (topPerformanceTimeframe) topPerformanceTimeframe.style.display = 'block';
         if (state.poolsData.length === 0) { 
             statusArea.style.display = 'block'; 
             statusArea.innerText = 'Menjalankan Radar Meteora DLMM...'; 
@@ -202,6 +138,7 @@ function switchView(view) {
         document.getElementById('btnAlpha').classList.add('active'); 
         document.getElementById('colFeeBin').innerText = "Market Cap"; 
         sortMeteora.style.display = 'none'; 
+        if (topPerformanceTimeframe) topPerformanceTimeframe.style.display = 'none';
         if (state.alphaData.length === 0) { 
             statusArea.style.display = 'block'; 
             statusArea.innerText = 'Algoritma mengekstrak data pasar organik (Filter Ketat USD Buy > Sell)...'; 
@@ -289,10 +226,10 @@ async function fetchSearchDirectly(q) {
     }
 }
 
-async function loadPools() {
+async function loadPools(force = false) {
     if (state.isMeteoraLoading || state.currentView !== 'meteora') return;
 
-    if (Date.now() - state.lastMeteoraFetch < 15000) return;
+    if (!force && Date.now() - state.lastMeteoraFetch < 15000) return;
     state.lastMeteoraFetch = Date.now();
     state.isMeteoraLoading = true;
     hideInfoBox();
@@ -304,7 +241,7 @@ async function loadPools() {
     const statusArea = document.getElementById('statusArea');
     if (state.poolsData.length === 0) {
         statusArea.style.display = 'block';
-        statusArea.innerText = 'Mengakses Data DLMM Meteora Murni...';
+        statusArea.innerText = `Mengakses TOP PERFORMA Meteora ${state.meteoraTimeframe}...`;
     }
 
     try {
@@ -312,8 +249,8 @@ async function loadPools() {
         let useFallback = false;
 
         try {
-            statusArea.innerText = 'Memanggil API Meteora Pool Discovery...';
-            const meteoraRes = await fetchMeteoraDiscoveryAPI(signal);
+            statusArea.innerText = `Memanggil API TOP PERFORMA Meteora (${state.meteoraTimeframe})...`;
+            const meteoraRes = await fetchMeteoraDiscoveryAPI(signal, state.meteoraTimeframe);
             if (signal?.aborted) return;
 
             if (meteoraRes && Array.isArray(meteoraRes.data) && meteoraRes.data.length > 0) {
@@ -661,7 +598,7 @@ window.applyFiltersAndRender = applyFiltersAndRender;
 window.closeModal = closeModal;
 window.openModal = openModal;
 window.togglePin = togglePin;
-window.toggleGMGNTrench = toggleGMGNTrench;
+window.changeMeteoraTimeframe = changeMeteoraTimeframe;
 
 function getBestPriceChange(dex) {
     if (!dex || !dex.priceChange) return null;

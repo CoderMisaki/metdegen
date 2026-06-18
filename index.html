@@ -32,7 +32,15 @@
         <div class="filters" id="filterContainer">
             <button id="btnMeteora" class="filter-btn active" onclick="switchView('meteora')">💧 Meteora DLMM</button>
             <button id="btnAlpha" class="filter-btn" onclick="switchView('alpha')">🎯 Signal Alpha</button>
-            <button id="btnGMGNTrench" class="filter-btn" onclick="toggleGMGNTrench()">🎯 GMGN Trench</button>
+            <select id="topPerformanceTimeframe" class="filter-select" onchange="changeMeteoraTimeframe(this.value)" style="display: block;" aria-label="TOP PERFORMA timeframe">
+                <option value="24h">🏆 TOP PERFORMA 24H</option>
+                <option value="12h">🏆 TOP PERFORMA 12H</option>
+                <option value="4h">🏆 TOP PERFORMA 4H</option>
+                <option value="2h">🏆 TOP PERFORMA 2H</option>
+                <option value="1h">🏆 TOP PERFORMA 1H</option>
+                <option value="30m">🏆 TOP PERFORMA 30M</option>
+                <option value="5m">🏆 TOP PERFORMA 5M</option>
+            </select>
             <select id="sortMeteora" class="filter-select" onchange="applyFiltersAndRender()" style="display: block;">
                 <option value="fees">💰 24H Fees Tertinggi</option>
                 <option value="trend">🔥 Trend Default</option>

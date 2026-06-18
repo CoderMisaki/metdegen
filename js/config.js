@@ -31,7 +31,7 @@ export const state = {
     lastAlphaFetch: 0,
     apiCache: new Map(),
     gmgnCache: new Map(),
-    gmgnTrenchMode: false,
+    meteoraTimeframe: '24h',
     isRefreshing: false,
     modalSession: 0
 };

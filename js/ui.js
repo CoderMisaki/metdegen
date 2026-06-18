@@ -63,6 +63,38 @@ function getErrorDetails(error) {
     return base && base.length > 120 ? `${base.slice(0, 117)}...` : base;
 }
 
+
+function renderPriceTrendChart(values = [], fallbackChange = null) {
+    const series = Array.isArray(values) ? values.map(Number).filter(Number.isFinite) : [];
+    if (series.length < 2) {
+        return `<div class="price-trend-empty">${formatPct(fallbackChange)}</div>`;
+    }
+
+    const width = 74;
+    const height = 28;
+    const padding = 3;
+    const min = Math.min(...series);
+    const max = Math.max(...series);
+    const range = max - min || Math.max(Math.abs(max), 1);
+    const points = series.map((value, index) => {
+        const x = padding + (index / (series.length - 1)) * (width - padding * 2);
+        const y = height - padding - ((value - min) / range) * (height - padding * 2);
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
+    }).join(' ');
+    const first = series[0];
+    const last = series[series.length - 1];
+    const isUp = last >= first;
+    const trendClass = isUp ? 'up' : 'down';
+    const change = first !== 0 ? ((last - first) / first) * 100 : fallbackChange;
+
+    return `<div class="price-trend-chart ${trendClass}" title="Price Trend ${formatPct(change)}">
+        <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Price Trend ${formatPct(change)}">
+            <polyline points="${points}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></polyline>
+        </svg>
+        <span>${formatPct(change)}</span>
+    </div>`;
+}
+
 function pickFeePercent(mtData, pool) {
     const cands = [
         mtData?.dlmm_params?.max_fee_percentage,
@@ -132,7 +164,7 @@ export function renderList(dataToRender) {
             <div class="pool-metrics">
                 <div class="metric-col"><div class="metric-label">${isAlpha ? 'Market Cap' : '24H Fees'}</div>${col1Html}</div>
                 <div class="metric-col"><div class="metric-label">Vol 24H</div><div class="metric-val text-primary">${pool.vol24h !== null ? formatMoney(pool.vol24h) : '—'}</div></div>
-                <div class="metric-col"><div class="metric-label">Trend</div><div class="metric-val ${trColor}">${formatPct(pool.priceChange)}</div></div>
+                <div class="metric-col"><div class="metric-label">Price Trend</div><div class="metric-val ${trColor}">${isAlpha ? formatPct(pool.priceChange) : renderPriceTrendChart(pool.priceTrend, pool.priceChange)}</div></div>
             </div>
         </div>`;
     });

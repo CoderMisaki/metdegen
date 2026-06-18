@@ -33,13 +33,24 @@
             <button id="btnMeteora" class="filter-btn active" onclick="switchView('meteora')">💧 Meteora DLMM</button>
             <button id="btnAlpha" class="filter-btn" onclick="switchView('alpha')">🎯 Signal Alpha</button>
             <select id="topPerformanceTimeframe" class="filter-select" onchange="changeMeteoraTimeframe(this.value)" style="display: block;" aria-label="TOP PERFORMA timeframe">
-                <option value="24h">🏆 TOP PERFORMA 24H</option>
-                <option value="12h">🏆 TOP PERFORMA 12H</option>
-                <option value="4h">🏆 TOP PERFORMA 4H</option>
-                <option value="2h">🏆 TOP PERFORMA 2H</option>
-                <option value="1h">🏆 TOP PERFORMA 1H</option>
-                <option value="30m">🏆 TOP PERFORMA 30M</option>
-                <option value="5m">🏆 TOP PERFORMA 5M</option>
+                <optgroup label="🏆 TOP PERFORMA">
+                    <option value="top:24h">TOP PERFORMA 24H</option>
+                    <option value="top:12h">TOP PERFORMA 12H</option>
+                    <option value="top:4h">TOP PERFORMA 4H</option>
+                    <option value="top:2h">TOP PERFORMA 2H</option>
+                    <option value="top:1h">TOP PERFORMA 1H</option>
+                    <option value="top:30m">TOP PERFORMA 30M</option>
+                    <option value="top:5m">TOP PERFORMA 5M</option>
+                </optgroup>
+                <optgroup label="🔥 TRENDING">
+                    <option value="trending:24h">TRENDING 24H</option>
+                    <option value="trending:12h">TRENDING 12H</option>
+                    <option value="trending:4h">TRENDING 4H</option>
+                    <option value="trending:2h">TRENDING 2H</option>
+                    <option value="trending:1h">TRENDING 1H</option>
+                    <option value="trending:30m">TRENDING 30M</option>
+                    <option value="trending:5m">TRENDING 5M</option>
+                </optgroup>
             </select>
             <select id="sortMeteora" class="filter-select" onchange="applyFiltersAndRender()" style="display: block;">
                 <option value="fees">💰 24H Fees Tertinggi</option>
@@ -58,7 +69,7 @@
                 <div style="flex: 2; display: flex; justify-content: space-between; padding-right: 16px;">
                     <div id="colFeeBin" style="width:33%; text-align:left;">24H Fees</div>
                     <div style="width:33%; text-align:right;">Vol (24H)</div>
-                    <div style="width:33%; text-align:right;">Trend</div>
+                    <div style="width:33%; text-align:right;">Price Trend</div>
                 </div>
             </div>
 

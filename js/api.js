@@ -125,11 +125,13 @@ export async function fetchWithCache(url, ttl = 60000, signal = null) {
 
 // ==== METEORA APIs ====
 const METEORA_TOP_PERFORMANCE_TIMEFRAMES = new Set(['24h', '12h', '4h', '2h', '1h', '30m', '5m']);
+const METEORA_DISCOVERY_CATEGORIES = new Set(['top', 'trending']);
 const METEORA_TOP_PERFORMANCE_FILTER = 'base_token_market_cap%3E%3D50000%26%26base_token_holders%3E%3D10%26%26volume%3E%3D500%26%26active_tvl%3E%3D2000';
 
-export async function fetchMeteoraDiscoveryAPI(signal = null, timeframe = '24h') {
+export async function fetchMeteoraDiscoveryAPI(signal = null, timeframe = '24h', category = 'top') {
     const safeTimeframe = METEORA_TOP_PERFORMANCE_TIMEFRAMES.has(timeframe) ? timeframe : '24h';
-    const query = `page_size=50&timeframe=${safeTimeframe}&category=top&filter_by=${METEORA_TOP_PERFORMANCE_FILTER}`;
+    const safeCategory = METEORA_DISCOVERY_CATEGORIES.has(category) ? category : 'top';
+    const query = `page_size=50&timeframe=${safeTimeframe}&category=${safeCategory}&filter_by=${METEORA_TOP_PERFORMANCE_FILTER}`;
     return fetchWithCache(`https://pool-discovery-api.datapi.meteora.ag/pools?${query}`, 45000, signal);
 }
 

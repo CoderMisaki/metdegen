@@ -1,4 +1,4 @@
-const { gmgnRequest, json } = require('./gmgn-utils');
+const { gmgnRequest, json, sendGmgnError } = require('./gmgn-utils');
 
 module.exports = async function handler(req, res) {
   if (req.method !== 'GET') return json(res, 405, { error: 'Method not allowed' });
@@ -23,10 +23,6 @@ module.exports = async function handler(req, res) {
 
     return json(res, 200, { ok: true, source: 'gmgn', data: flattenedData });
   } catch (error) {
-    return json(res, error.code === 'GMGN_BLOCKED' ? 502 : 500, {
-      ok: false,
-      code: error.code || 'GMGN_ERROR',
-      error: error.message
-    });
+    return sendGmgnError(res, error);
   }
 };

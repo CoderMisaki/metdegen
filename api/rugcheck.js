@@ -1,18 +1,74 @@
 const bs58 = require('bs58');
 const nacl = require('tweetnacl');
 
-// Global cache di dalam serverless (agar tidak login berkali-kali setiap detik)
-let cachedAuth = null;
-let authExpiry = 0;
+const AUTH_CACHE_TTL_SECONDS = 60 * 60 * 12;
+
+function getKvConfig() {
+    const url = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
+    const token = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+    return url && token ? { url: url.replace(/\/$/, ''), token } : null;
+}
+
+async function readAuthFromKv() {
+    const kv = getKvConfig();
+    if (!kv) return null;
+
+    try {
+        const res = await fetch(`${kv.url}/get/rugcheck:auth`, {
+            headers: { Authorization: `Bearer ${kv.token}` }
+        });
+        if (!res.ok) return null;
+
+        const payload = await res.json().catch(() => ({}));
+        const raw = payload?.result;
+        if (!raw) return null;
+
+        const auth = typeof raw === 'string' ? JSON.parse(raw) : raw;
+        if (auth?.expiresAt && Date.now() >= Number(auth.expiresAt)) return null;
+        if (!auth?.cookie && !auth?.token) return null;
+
+        return { cookie: auth.cookie || null, token: auth.token || null };
+    } catch (e) {
+        console.warn('[RugCheck Auth] KV read skipped:', e.message);
+        return null;
+    }
+}
+
+async function writeAuthToKv(auth) {
+    const kv = getKvConfig();
+    if (!kv || (!auth?.cookie && !auth?.token)) return;
+
+    try {
+        const expiresAt = Date.now() + (AUTH_CACHE_TTL_SECONDS * 1000);
+        await fetch(kv.url, {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${kv.token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(['SET', 'rugcheck:auth', JSON.stringify({ ...auth, expiresAt }), 'EX', AUTH_CACHE_TTL_SECONDS])
+        });
+    } catch (e) {
+        console.warn('[RugCheck Auth] KV write skipped:', e.message);
+    }
+}
+
+function getClientAuth(req) {
+    const token = req.headers['x-rugcheck-token'];
+    const cookie = req.headers['x-rugcheck-cookie'];
+    if (!token && !cookie) return null;
+    return {
+        token: Array.isArray(token) ? token[0] : token,
+        cookie: Array.isArray(cookie) ? cookie[0] : cookie
+    };
+}
 
 async function ensureAuth() {
     const pk = process.env.SOLANA_PRIVATE_KEY;
     if (!pk) return null; // Jika lupa set ENV, tetap jalan tanpa login (fallback publik)
 
-    // Gunakan sesi login lama jika masih valid
-    if (cachedAuth && Date.now() < authExpiry) {
-        return cachedAuth;
-    }
+    const cachedAuth = await readAuthFromKv();
+    if (cachedAuth) return cachedAuth;
 
     try {
         const secretKey = bs58.decode(pk);
@@ -56,11 +112,10 @@ async function ensureAuth() {
             const data = await res.json().catch(() => ({}));
             const token = data.token || data.accessToken || null;
 
-            cachedAuth = { cookie, token };
-            // Simpan sesi login selama 12 jam
-            authExpiry = Date.now() + (1000 * 60 * 60 * 12); 
+            const auth = { cookie, token };
+            await writeAuthToKv(auth);
             console.log("[RugCheck Auth] Login Berhasil!");
-            return cachedAuth;
+            return auth;
         } else {
             console.error("[RugCheck Auth] Gagal Login:", res.status);
         }
@@ -82,8 +137,8 @@ module.exports = async function handler(req, res) {
     }
 
     try {
-        // Panggil fungsi otentikasi
-        const auth = await ensureAuth();
+        // Prioritaskan auth yang dikirim client; fallback ke cache serverless eksternal atau login per request.
+        const auth = getClientAuth(req) || await ensureAuth();
         
         const headers = {
             'Accept': 'application/json',

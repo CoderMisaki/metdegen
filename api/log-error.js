@@ -1,19 +1,11 @@
 const { json } = require('./gmgn-utils');
 
-const RATE_WINDOW_MS = 60_000;
-const RATE_MAX_PER_IP = 60;
-const rateMap = new Map();
+const MAX_FIELD_LENGTH = 500;
 
-function isRateLimited(ip) {
-  const now = Date.now();
-  const rec = rateMap.get(ip) || { count: 0, resetAt: now + RATE_WINDOW_MS };
-  if (now > rec.resetAt) {
-    rec.count = 0;
-    rec.resetAt = now + RATE_WINDOW_MS;
-  }
-  rec.count += 1;
-  rateMap.set(ip, rec);
-  return rec.count > RATE_MAX_PER_IP;
+function truncate(value, maxLength = MAX_FIELD_LENGTH) {
+  if (value === undefined || value === null) return value;
+  const text = String(value);
+  return text.length > maxLength ? `${text.slice(0, maxLength)}…` : text;
 }
 
 module.exports = async function handler(req, res) {
@@ -25,19 +17,16 @@ module.exports = async function handler(req, res) {
     return json(res, 403, { ok: false, error: 'Forbidden origin' });
   }
 
-  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown';
-  if (isRateLimited(ip)) return json(res, 429, { ok: false, error: 'Rate limit exceeded' });
-
   try {
     const { message, source, lineno, colno, error, type, url } = req.body || {};
     console.error('[GlobalErrorMonitor]', {
-      type: type || 'unknown',
-      message: message || 'Unknown error',
-      source: source || '',
-      lineno: lineno || 0,
-      colno: colno || 0,
-      error: error || null,
-      url: url || ''
+      type: truncate(type || 'unknown', 80),
+      message: truncate(message || 'Unknown error'),
+      source: truncate(source || ''),
+      lineno: Number(lineno) || 0,
+      colno: Number(colno) || 0,
+      error: truncate(error || null),
+      url: truncate(url || '')
     });
 
     return json(res, 200, { ok: true });

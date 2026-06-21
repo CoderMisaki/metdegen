@@ -9,8 +9,25 @@ function createHttpError(status, url, body = '') {
     return err;
 }
 
-function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
+function sleep(ms, signal = null) {
+    return new Promise((resolve, reject) => {
+        if (signal?.aborted) { reject(signal.reason || new Error('Aborted')); return; }
+        const id = setTimeout(resolve, ms);
+        if (signal) {
+            signal.addEventListener('abort', () => {
+                clearTimeout(id);
+                reject(signal.reason || new Error('Aborted'));
+            }, { once: true });
+        }
+    });
+}
+
+function parseRetryAfter(value) {
+    if (!value) return 0;
+    const seconds = Number(value);
+    if (Number.isFinite(seconds) && seconds > 0) return seconds * 1000;
+    const retryAt = Date.parse(value);
+    return Number.isFinite(retryAt) ? Math.max(0, retryAt - Date.now()) : 0;
 }
 
 function isRetryableStatus(status) {
@@ -90,14 +107,15 @@ export async function fetchWithCache(url, ttl = 60000, signal = null) {
                     const bodyText = getFriendlyBody(await res.text().catch(() => ''));
                     const err = createHttpError(res.status, url, bodyText);
                     if (res.status === 429) {
-                        const retryAfter = Number(res.headers.get('retry-after') || 0);
-                        const waitMs = Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : 700 * (attempt + 1);
+                        const retryAfterMs = parseRetryAfter(res.headers.get('retry-after'));
+                        const fallbackMs = 700 * (attempt + 1);
+                        const waitMs = Math.min(Math.max(retryAfterMs || fallbackMs, 250), 10000);
                         lastErr = err;
-                        if (attempt < 2) { await sleep(waitMs); continue; }
+                        if (attempt < 2) { await sleep(waitMs, controller.signal); continue; }
                     }
                     if (isRetryableStatus(res.status) && attempt < 2) {
                         lastErr = err;
-                        await sleep(500 * (attempt + 1));
+                        await sleep(500 * (attempt + 1), controller.signal);
                         continue;
                     }
                     throw err;
@@ -113,7 +131,8 @@ export async function fetchWithCache(url, ttl = 60000, signal = null) {
                 lastErr = err;
                 if (err?.name === 'AbortError') throw err;
                 if (attempt < 2 && (err?.status === 429 || err?.status >= 500 || err?.name === 'TypeError' || err?.name === 'ApiParseError')) {
-                    await sleep(500 * (attempt + 1));
+                    const waitMs = err?.status === 429 ? Math.min(700 * (attempt + 1), 10000) : 500 * (attempt + 1);
+                    await sleep(waitMs, controller.signal);
                     continue;
                 }
                 break;

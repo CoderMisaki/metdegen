@@ -21,14 +21,26 @@ function buildHeaders() {
   return headers;
 }
 
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+function normalizeRetryAfter(value) {
+  if (!value) return '3';
+
+  const seconds = Number(value);
+  if (Number.isFinite(seconds) && seconds > 0) {
+    return String(Math.ceil(seconds));
+  }
+
+  const retryAt = Date.parse(value);
+  if (Number.isFinite(retryAt)) {
+    return String(Math.max(1, Math.ceil((retryAt - Date.now()) / 1000)));
+  }
+
+  return '3';
 }
 
 async function gmgnRequest(
   path,
   query = {},
-  { method = 'GET', body = null, retries = 2 } = {} // Tambah retries
+  { method = 'GET', body = null } = {}
 ) {
   const url = new URL(`${GMGN_BASE_URL}${path}`);
 
@@ -47,70 +59,76 @@ async function gmgnRequest(
   });
 
   const headers = buildHeaders();
-  const debug = process.env.GMGN_DEBUG === '1';
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 20000);
 
-  for (let attempt = 0; attempt <= retries; attempt += 1) {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 20000);
+  try {
+    const fetchOptions = {
+      method,
+      headers,
+      signal: controller.signal
+    };
+
+    if (body !== null && body !== undefined) {
+      fetchOptions.body = typeof body === 'string' ? body : JSON.stringify(body);
+      fetchOptions.headers['Content-Type'] = 'application/json';
+    }
+
+    const res = await fetch(url.toString(), fetchOptions);
+    const text = await res.text();
+
+    if (res.status === 429) {
+      const err = new Error(`GMGN rate limited: ${text.slice(0, 150)}`);
+      err.code = 'GMGN_RATE_LIMITED';
+      err.status = 429;
+      err.retryAfter = normalizeRetryAfter(res.headers.get('retry-after'));
+      throw err;
+    }
+
+    if (!res.ok) {
+      const err = new Error(`GMGN Error ${res.status}: ${text.slice(0, 150)}`);
+      err.code = res.status === 403 ? 'GMGN_BLOCKED' : 'GMGN_API_ERROR';
+      err.status = res.status;
+      throw err;
+    }
+
+    if (!text || !text.trim()) return {};
 
     try {
-      const fetchOptions = {
-        method,
-        headers,
-        signal: controller.signal
-      };
-
-      if (body !== null && body !== undefined) {
-        fetchOptions.body = typeof body === 'string' ? body : JSON.stringify(body);
-        fetchOptions.headers['Content-Type'] = 'application/json';
-      }
-
-      const res = await fetch(url.toString(), fetchOptions);
-      const text = await res.text();
-
-      // Handling Rate Limit (429) dari server API
-      if (res.status === 429) {
-        if (attempt < retries) {
-          // Cek apakah server menyuruh kita menunggu dengan waktu spesifik
-          const retryAfter = res.headers.get('retry-after');
-          const waitTime = retryAfter ? parseInt(retryAfter, 10) * 1000 : 2500 * (attempt + 1);
-          if (debug) console.warn(`[GMGN] Rate limited, retrying in ${waitTime}ms...`);
-          await sleep(waitTime);
-          continue;
-        }
-      }
-
-      if (!res.ok) {
-        const err = new Error(`GMGN Error ${res.status}: ${text.slice(0, 150)}`);
-        err.code = res.status === 403 ? 'GMGN_BLOCKED' : 'GMGN_API_ERROR';
-        err.status = res.status;
-        throw err;
-      }
-
-      if (!text || !text.trim()) return {};
-
-      try {
-        return JSON.parse(text);
-      } catch {
-        return { raw: text };
-      }
-    } catch (err) {
-      if (err?.name === 'AbortError') {
-        err.code = 'GMGN_TIMEOUT';
-      }
-
-      if (attempt < retries && !['GMGN_BLOCKED'].includes(err.code)) {
-        await sleep(1500 * (attempt + 1));
-        continue;
-      }
-      throw err;
-    } finally {
-      clearTimeout(timeout);
+      return JSON.parse(text);
+    } catch {
+      return { raw: text };
     }
+  } catch (err) {
+    if (err?.name === 'AbortError') {
+      err.code = 'GMGN_TIMEOUT';
+      err.status = 504;
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeout);
   }
+}
+
+function sendGmgnError(res, error) {
+  if (error?.code === 'GMGN_RATE_LIMITED' || error?.status === 429) {
+    res.setHeader('Retry-After', normalizeRetryAfter(error.retryAfter));
+    return json(res, 429, {
+      ok: false,
+      code: 'GMGN_RATE_LIMITED',
+      error: 'GMGN API rate limited. Retry after the provided delay.'
+    });
+  }
+
+  return json(res, error.code === 'GMGN_BLOCKED' ? 502 : 500, {
+    ok: false,
+    code: error.code || 'GMGN_ERROR',
+    error: error.message
+  });
 }
 
 module.exports = {
   gmgnRequest,
-  json
+  json,
+  sendGmgnError
 };
